@@ -197,7 +197,12 @@ namespace model
                                                double scale,
                                                double theta)
     {
-        return geom::move(geom::scale(geom::rotate(in, theta), scale), origin);
+        auto p = in;
+        for (size_t i = 0; i < p.points.size(); ++i)
+        {
+            p.points[i] = p.points[i].rotate(theta) * scale + origin;
+        }
+        return p;
     }
 
     inline geom_data make_geom(const parameters & p)
