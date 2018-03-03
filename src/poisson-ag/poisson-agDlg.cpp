@@ -36,6 +36,20 @@ void CPoissonAGDlg::DoDataExchange(CDataExchange* pDX)
     DDX_Check(pDX, IDC_CHECK1, m_bDirichletCellsVisible);
     DDX_Check(pDX, IDC_CHECK4, m_bIsolinesVisible);
     DDX_Check(pDX, IDC_CHECK5, m_bFieldLinesVisible);
+    DDX_Text(pDX, IDC_EDIT1,  data.params->m1_scale);
+    DDX_Text(pDX, IDC_EDIT2,  data.params->m1_origin.x);
+    DDX_Text(pDX, IDC_EDIT3,  data.params->m1_origin.y);
+    DDX_Text(pDX, IDC_EDIT4,  data.params->m1_theta);
+    DDX_Text(pDX, IDC_EDIT9,  data.params->m1_qs);
+    DDX_Text(pDX, IDC_EDIT10, data.params->m1_qn);
+    DDX_Text(pDX, IDC_EDIT5,  data.params->m2_scale);
+    DDX_Text(pDX, IDC_EDIT6,  data.params->m2_origin.x);
+    DDX_Text(pDX, IDC_EDIT7,  data.params->m2_origin.y);
+    DDX_Text(pDX, IDC_EDIT8,  data.params->m2_theta);
+    DDX_Text(pDX, IDC_EDIT11, data.params->m2_qs);
+    DDX_Text(pDX, IDC_EDIT12, data.params->m2_qn);
+    DDX_Text(pDX, IDC_EDIT13, data.params->dx);
+    DDX_Text(pDX, IDC_EDIT14, data.params->dy);
 }
 
 BEGIN_MESSAGE_MAP(CPoissonAGDlg, CSimulationDialog)
@@ -122,6 +136,8 @@ HCURSOR CPoissonAGDlg::OnQueryDragIcon()
 
 void CPoissonAGDlg::OnSimulation()
 {
+    model::adjust(*data.params, *data.config.world);
+    model::update_system_data(*data.params, data.system_data);
     while (m_bWorking)
     {
         Sleep(1000); // stub
