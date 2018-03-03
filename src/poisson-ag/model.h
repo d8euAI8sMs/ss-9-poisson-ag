@@ -196,7 +196,7 @@ namespace model
         for (size_t i = 0; i < p.points.size(); ++i)
         {
             auto p0 = geom::point2d_t(p.points[i].x * scale_x, p.points[i].y * scale_y);
-            p.points[i] = p0.rotate(theta) + origin;
+            p.points[i] = p0.rotate(theta / 180 * M_PI) + origin;
         }
         return p;
     }
