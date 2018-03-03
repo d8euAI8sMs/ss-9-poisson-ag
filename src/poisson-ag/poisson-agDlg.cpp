@@ -25,6 +25,7 @@ CPoissonAGDlg::CPoissonAGDlg(CWnd* pParent /*=NULL*/)
 void CPoissonAGDlg::DoDataExchange(CDataExchange* pDX)
 {
     CSimulationDialog::DoDataExchange(pDX);
+    DDX_Control(pDX, IDC_PLOT, my_plot);
 }
 
 BEGIN_MESSAGE_MAP(CPoissonAGDlg, CSimulationDialog)
@@ -45,6 +46,19 @@ BOOL CPoissonAGDlg::OnInitDialog()
     SetIcon(m_hIcon, FALSE);        // Set small icon
 
     // TODO: Add extra initialization here
+
+    my_plot.plot_layer.with(model::make_root_drawable(data.config, {
+        data.system_data.dirichlet_cell_plot,
+        data.system_data.triangulation_plot,
+        data.system_data.system_plot
+    }));
+
+    my_plot.background = plot::palette::brush(0xffffff);
+    my_plot.triple_buffered = true;
+
+    my_plot.RedrawBuffer();
+    my_plot.SwapBuffers();
+    my_plot.RedrawWindow();
 
     return TRUE;  // return TRUE  unless you set the focus to a control
 }
