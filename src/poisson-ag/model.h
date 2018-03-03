@@ -181,26 +181,24 @@ namespace model
         n = size_t(std::floor(3 * w / 4 / dl));
         for (size_t i = 0; i < n; ++i)
             path.points.emplace_back(-w / 2 + i * dl, s / 2);
-        n = size_t(std::floor(M_PI * r2 / dl));
+        n = size_t(std::floor(M_PI / 2 * r2 / dl));
         for (size_t i = 0; i < n; ++i)
-            path.points.emplace_back(w / 4 + r2 * std::sin(M_PI / n * i),
-                                     r2 * std::cos(M_PI / n * i));
-        n = size_t(std::floor(3 * w / 4 / dl));
-        for (size_t i = 0; i < n; ++i)
-            path.points.emplace_back(w / 4 - i * dl, -s / 2);
+            path.points.emplace_back(w / 4 + r2 * std::sin(M_PI / 2 / n * i),
+                                     r2 * std::cos(M_PI / 2 / n * i));
 
         return path;
     }
 
     inline geom::polygon < > transform_polygon(const geom::polygon < > & in,
                                                const geom::point2d_t & origin,
-                                               double scale,
+                                               double scale_x, double scale_y,
                                                double theta)
     {
         auto p = in;
         for (size_t i = 0; i < p.points.size(); ++i)
         {
-            p.points[i] = p.points[i].rotate(theta) * scale + origin;
+            auto p0 = geom::point2d_t(p.points[i].x * scale_x, p.points[i].y * scale_y);
+            p.points[i] = p0.rotate(theta) + origin;
         }
         return p;
     }
