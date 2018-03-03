@@ -259,19 +259,15 @@ namespace model
         };
     }
 
-    inline mesh_data make_system_data(const parameters & p)
+    inline void update_system_data(const parameters & p, mesh_data & md)
     {
-        mesh_data md;
-
         std::vector < geom::point2d_t > super =
         {
             { -p.w, -p.h }, { p.w, -p.h }, { p.w, p.h }, { -p.w, p.h },
         };
 
-        md.geometry = util::create < geom_data > (make_geom(p));
+        *md.geometry = make_geom(p);
         auto & g = *md.geometry;
-
-        md.mesh = util::create < geom::mesh > (false, false);
 
         md.mesh->init(super);
 
@@ -300,6 +296,16 @@ namespace model
         md.mesh->finish_mesh();
 
         md.data = util::create < std::vector < double > > (md.mesh->vertices().size());
+    }
+
+    inline mesh_data make_system_data(const parameters & p)
+    {
+        mesh_data md;
+
+        md.geometry = util::create < geom_data > ();
+        md.mesh = util::create < geom::mesh > (false, false);
+
+        update_system_data(p, md);
 
         md.triangulation_plot = plot::triangulation_drawable::create(
             plot::make_data_source(md.mesh), nullptr);
@@ -311,11 +317,11 @@ namespace model
         return md;
     }
 
-    inline model_data make_model_data()
+    inline model_data make_model_data(const parameters & p = make_default_parameters())
     {
         model_data md;
         md.config = make_plot_config();
-        md.params = util::create < parameters > (make_default_parameters());
+        md.params = util::create < parameters > (p);
         md.field_line_data = make_plot_data();
         md.isoline_data = make_plot_data();
         md.system_data = make_system_data(*md.params);
