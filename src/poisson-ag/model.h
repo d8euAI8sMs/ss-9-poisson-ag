@@ -74,6 +74,7 @@ namespace model
         plot::triangulation_drawable :: ptr_t triangulation_plot;
         plot::dirichlet_cell_drawable :: ptr_t dirichlet_cell_plot;
         plot::drawable::ptr_t system_plot;
+        plot::drawable::ptr_t point_plot;
     };
 
     struct plot_data
@@ -217,15 +218,12 @@ namespace model
     {
         return [&, m] (CDC & dc, const plot::viewport & vp)
         {
-            auto metal_brush  = plot::palette::brush(RGB(0, 0, 0));
             auto border_brush = plot::palette::brush(RGB(0, 0, 0));
             auto m1_brush = plot::palette::brush(RGB(155, 0, 0));
             auto m2_brush = plot::palette::brush(RGB(0, 155, 0));
 
             auto south_pen = plot::palette::pen(RGB(0, 0, 155), 5);
             auto north_pen = plot::palette::pen(RGB(155, 0, 0), 5);
-
-            auto point_painter = plot::custom_drawable(plot::circle_painter(3, metal_brush));
 
             dc.SelectObject(south_pen.get());
 
@@ -258,6 +256,17 @@ namespace model
                 dc.MoveTo(vp.world_to_screen().xy(m.geometry->m2_n.points[i]));
                 dc.LineTo(vp.world_to_screen().xy(m.geometry->m2_n.points[j]));
             }
+        };
+    }
+
+    inline static plot::painter_t make_point_painter(const parameters & params,
+                                                     mesh_data m)
+    {
+        return [&, m] (CDC & dc, const plot::viewport & vp)
+        {
+            auto metal_brush  = plot::palette::brush(RGB(0, 0, 0));
+
+            auto point_painter = plot::custom_drawable(plot::circle_painter(3, metal_brush));
 
             for (geom::mesh::idx_t i = 0; i < m.mesh->vertices().size(); ++i)
             {
@@ -324,6 +333,8 @@ namespace model
             plot::make_data_source(md.mesh), nullptr, plot::palette::pen(RGB(155, 0, 0)));
         md.system_plot = plot::custom_drawable::create(
             make_system_painter(p, md));
+        md.point_plot = plot::custom_drawable::create(
+            make_point_painter(p, md));
 
         return md;
     }

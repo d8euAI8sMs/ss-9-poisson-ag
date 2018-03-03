@@ -50,7 +50,8 @@ BOOL CPoissonAGDlg::OnInitDialog()
     my_plot.plot_layer.with(model::make_root_drawable(data.config, {
         data.system_data.dirichlet_cell_plot,
         data.system_data.triangulation_plot,
-        data.system_data.system_plot
+        data.system_data.system_plot,
+        data.system_data.point_plot
     }));
 
     my_plot.background = plot::palette::brush(0xffffff);
