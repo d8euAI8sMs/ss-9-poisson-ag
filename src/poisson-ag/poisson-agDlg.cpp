@@ -18,6 +18,11 @@
 CPoissonAGDlg::CPoissonAGDlg(CWnd* pParent /*=NULL*/)
     : CSimulationDialog(CPoissonAGDlg::IDD, pParent)
     , data(model::make_model_data())
+    , m_bPointsVisible(TRUE)
+    , m_bTriangulationVisible(FALSE)
+    , m_bDirichletCellsVisible(FALSE)
+    , m_bIsolinesVisible(TRUE)
+    , m_bFieldLinesVisible(TRUE)
 {
     m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -26,6 +31,11 @@ void CPoissonAGDlg::DoDataExchange(CDataExchange* pDX)
 {
     CSimulationDialog::DoDataExchange(pDX);
     DDX_Control(pDX, IDC_PLOT, my_plot);
+    DDX_Check(pDX, IDC_CHECK3, m_bPointsVisible);
+    DDX_Check(pDX, IDC_CHECK2, m_bTriangulationVisible);
+    DDX_Check(pDX, IDC_CHECK1, m_bDirichletCellsVisible);
+    DDX_Check(pDX, IDC_CHECK4, m_bIsolinesVisible);
+    DDX_Check(pDX, IDC_CHECK5, m_bFieldLinesVisible);
 }
 
 BEGIN_MESSAGE_MAP(CPoissonAGDlg, CSimulationDialog)
@@ -33,6 +43,11 @@ BEGIN_MESSAGE_MAP(CPoissonAGDlg, CSimulationDialog)
     ON_WM_QUERYDRAGICON()
     ON_BN_CLICKED(IDC_BUTTON1, &CPoissonAGDlg::OnBnClickedButton1)
     ON_BN_CLICKED(IDC_BUTTON2, &CPoissonAGDlg::OnBnClickedButton2)
+    ON_BN_CLICKED(IDC_CHECK3, &CPoissonAGDlg::OnBnClickedCheck3)
+    ON_BN_CLICKED(IDC_CHECK2, &CPoissonAGDlg::OnBnClickedCheck3)
+    ON_BN_CLICKED(IDC_CHECK1, &CPoissonAGDlg::OnBnClickedCheck3)
+    ON_BN_CLICKED(IDC_CHECK4, &CPoissonAGDlg::OnBnClickedCheck3)
+    ON_BN_CLICKED(IDC_CHECK5, &CPoissonAGDlg::OnBnClickedCheck3)
 END_MESSAGE_MAP()
 
 
@@ -48,6 +63,8 @@ BOOL CPoissonAGDlg::OnInitDialog()
     SetIcon(m_hIcon, FALSE);        // Set small icon
 
     // TODO: Add extra initialization here
+
+    OnBnClickedCheck3();
 
     my_plot.plot_layer.with(model::make_root_drawable(data.config, {
         data.system_data.dirichlet_cell_plot,
@@ -129,4 +146,15 @@ void CPoissonAGDlg::OnBnClickedButton2()
 {
     UpdateData(TRUE);
     StopSimulationThread();
+}
+
+
+void CPoissonAGDlg::OnBnClickedCheck3()
+{
+    UpdateData(TRUE);
+    data.system_data.point_plot->visible = (m_bPointsVisible == TRUE);
+    data.system_data.triangulation_plot->visible = (m_bTriangulationVisible == TRUE);
+    data.system_data.dirichlet_cell_plot->visible = (m_bDirichletCellsVisible == TRUE);
+    data.isoline_data.plot->visible = (m_bIsolinesVisible == TRUE);
+    data.field_line_data.plot->visible = (m_bFieldLinesVisible == TRUE);
 }

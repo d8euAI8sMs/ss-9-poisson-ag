@@ -37,4 +37,10 @@ public:
     void OnSimulation();
     afx_msg void OnBnClickedButton1();
     afx_msg void OnBnClickedButton2();
+    afx_msg void OnBnClickedCheck3();
+    BOOL m_bPointsVisible;
+    BOOL m_bTriangulationVisible;
+    BOOL m_bDirichletCellsVisible;
+    BOOL m_bIsolinesVisible;
+    BOOL m_bFieldLinesVisible;
 };
