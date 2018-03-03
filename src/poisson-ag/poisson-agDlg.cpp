@@ -17,6 +17,7 @@
 
 CPoissonAGDlg::CPoissonAGDlg(CWnd* pParent /*=NULL*/)
     : CSimulationDialog(CPoissonAGDlg::IDD, pParent)
+    , data(model::make_model_data())
 {
     m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }

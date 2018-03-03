@@ -5,6 +5,8 @@
 
 #include <util/common/gui/SimulationDialog.h>
 
+#include "model.h"
+
 // CPoissonAGDlg dialog
 class CPoissonAGDlg : public CSimulationDialog
 {
@@ -22,6 +24,7 @@ public:
 // Implementation
 protected:
     HICON m_hIcon;
+    model::model_data data;
 
     // Generated message map functions
     virtual BOOL OnInitDialog();
