@@ -63,7 +63,7 @@ namespace model
 
     struct geom_data
     {
-        geom::polygon < > m1, m2;
+        geom::polygon < > m1_n, m1_s, m2_n, m2_s;
     };
 
     struct mesh_data
@@ -162,16 +162,13 @@ namespace model
         geom::polygon < > path;
 
         size_t n;
-        n = size_t(std::floor(s / dl));
+        n = size_t(std::floor((w / 4 - r2) / dl));
         for (size_t i = 0; i < n; ++i)
-            path.points.emplace_back(-w / 2, -s / 2 - i * dl);
-        n = size_t(std::floor(3 * w / 4 / dl));
+            path.points.emplace_back(w / 4 + r2 + i * dl, 0);
+        n = size_t(std::floor(M_PI / 2 * r1 / dl));
         for (size_t i = 0; i < n; ++i)
-            path.points.emplace_back(-w / 2 + i * dl, -h / 2);
-        n = size_t(std::floor(M_PI * r1 / dl));
-        for (size_t i = 0; i < n; ++i)
-            path.points.emplace_back(w / 4 + r1 * std::sin(M_PI / n * i),
-                                     - r1 * std::cos(M_PI / n * i));
+            path.points.emplace_back(w / 4 + r1 * std::cos(M_PI / 2 / n * i),
+                                     + r1 * std::sin(M_PI / 2 / n * i));
         n = size_t(std::floor(3 * w / 4 / dl));
         for (size_t i = 0; i < n; ++i)
             path.points.emplace_back(w / 4 - i * dl, h / 2);
@@ -208,8 +205,10 @@ namespace model
         auto base = make_magnet_shape(min(p.dx, p.dy) / max(p.w, p.h) * 3);
         return
         {
-            transform_polygon(base, p.m1_origin, p.m1_scale, p.m1_theta),
-            transform_polygon(base, p.m2_origin, p.m2_scale, p.m2_theta)
+            transform_polygon(base, p.m1_origin, p.m1_scale, p.m1_scale, p.m1_theta),
+            transform_polygon(base, p.m1_origin, p.m1_scale, -p.m1_scale, p.m1_theta),
+            transform_polygon(base, p.m2_origin, p.m2_scale, p.m2_scale, p.m2_theta),
+            transform_polygon(base, p.m2_origin, p.m2_scale, -p.m2_scale, p.m2_theta)
         };
     }
 
@@ -223,36 +222,46 @@ namespace model
             auto m1_brush = plot::palette::brush(RGB(155, 0, 0));
             auto m2_brush = plot::palette::brush(RGB(0, 155, 0));
 
-            auto border_pen = plot::palette::pen(0xac00ac, 3);
+            auto south_pen = plot::palette::pen(RGB(0, 0, 155), 5);
+            auto north_pen = plot::palette::pen(RGB(155, 0, 0), 5);
 
-            auto m1_painter = plot::custom_drawable(plot::circle_painter(3, m1_brush));
-            auto m2_painter = plot::custom_drawable(plot::circle_painter(3, m2_brush));
-            auto metal_painter = plot::custom_drawable(plot::circle_painter(3, metal_brush));
+            auto point_painter = plot::custom_drawable(plot::circle_painter(3, metal_brush));
 
-            dc.SelectObject(border_pen.get());
+            dc.SelectObject(south_pen.get());
 
-            for (size_t i = 0, j = 1; i < m.geometry->m1.points.size(); ++i, ++j)
+            for (size_t i = 0, j = 1; i < m.geometry->m1_s.points.size(); ++i, ++j)
             {
-                if (j == m.geometry->m1.points.size()) j = 0;
-                dc.MoveTo(vp.world_to_screen().xy(m.geometry->m1.points[i]));
-                dc.LineTo(vp.world_to_screen().xy(m.geometry->m1.points[j]));
+                if (j == m.geometry->m1_s.points.size()) j = 0;
+                dc.MoveTo(vp.world_to_screen().xy(m.geometry->m1_s.points[i]));
+                dc.LineTo(vp.world_to_screen().xy(m.geometry->m1_s.points[j]));
             }
 
-            for (size_t i = 0, j = 1; i < m.geometry->m2.points.size(); ++i, ++j)
+            for (size_t i = 0, j = 1; i < m.geometry->m2_s.points.size(); ++i, ++j)
             {
-                if (j == m.geometry->m2.points.size()) j = 0;
-                dc.MoveTo(vp.world_to_screen().xy(m.geometry->m2.points[i]));
-                dc.LineTo(vp.world_to_screen().xy(m.geometry->m2.points[j]));
+                if (j == m.geometry->m2_s.points.size()) j = 0;
+                dc.MoveTo(vp.world_to_screen().xy(m.geometry->m2_s.points[i]));
+                dc.LineTo(vp.world_to_screen().xy(m.geometry->m2_s.points[j]));
+            }
+
+            dc.SelectObject(north_pen.get());
+
+            for (size_t i = 0, j = 1; i < m.geometry->m1_n.points.size(); ++i, ++j)
+            {
+                if (j == m.geometry->m1_n.points.size()) j = 0;
+                dc.MoveTo(vp.world_to_screen().xy(m.geometry->m1_n.points[i]));
+                dc.LineTo(vp.world_to_screen().xy(m.geometry->m1_n.points[j]));
+            }
+
+            for (size_t i = 0, j = 1; i < m.geometry->m2_n.points.size(); ++i, ++j)
+            {
+                if (j == m.geometry->m2_n.points.size()) j = 0;
+                dc.MoveTo(vp.world_to_screen().xy(m.geometry->m2_n.points[i]));
+                dc.LineTo(vp.world_to_screen().xy(m.geometry->m2_n.points[j]));
             }
 
             for (geom::mesh::idx_t i = 0; i < m.mesh->vertices().size(); ++i)
             {
-                if (m.mesh->flags_at(i) & material::magnet1)
-                    m1_painter.draw_at(dc, vp, m.mesh->point_at(i));
-                else if (m.mesh->flags_at(i) & material::magnet2)
-                    m2_painter.draw_at(dc, vp, m.mesh->point_at(i));
-                else
-                    metal_painter.draw_at(dc, vp, m.mesh->point_at(i));
+                point_painter.draw_at(dc, vp, m.mesh->point_at(i));
             }
         };
     }
@@ -269,8 +278,10 @@ namespace model
 
         md.mesh->init(super);
 
-        md.mesh->add(g.m1.points, material::magnet1 | material::bound);
-        md.mesh->add(g.m2.points, material::magnet2 | material::bound);
+        md.mesh->add(g.m1_s.points, material::magnet1 | material::south | material::bound);
+        md.mesh->add(g.m1_n.points, material::magnet1 | material::north | material::bound);
+        md.mesh->add(g.m2_s.points, material::magnet2 | material::south | material::bound);
+        md.mesh->add(g.m2_n.points, material::magnet2 | material::north | material::bound);
 
         size_t n = size_t(std::floor(p.w / p.dx));
         size_t m = size_t(std::floor(p.h / p.dy));
@@ -285,8 +296,10 @@ namespace model
             }
             p0.x += (rand() / (RAND_MAX + 1.) - 0.5) * p.dx / 5;
             p0.y += (rand() / (RAND_MAX + 1.) - 0.5) * p.dx / 5;
-            if (geom::status::is(g.m1.contains(p0), geom::status::polygon::contains_point) ||
-                geom::status::is(g.m2.contains(p0), geom::status::polygon::contains_point))
+            if (geom::status::is(g.m1_s.contains(p0), geom::status::polygon::contains_point) ||
+                geom::status::is(g.m1_n.contains(p0), geom::status::polygon::contains_point) ||
+                geom::status::is(g.m2_s.contains(p0), geom::status::polygon::contains_point) ||
+                geom::status::is(g.m2_n.contains(p0), geom::status::polygon::contains_point))
                 continue;
             md.mesh->add(p0);
         }
