@@ -34,4 +34,7 @@ protected:
     DECLARE_MESSAGE_MAP()
 public:
     CPlotControl my_plot;
+    void OnSimulation();
+    afx_msg void OnBnClickedButton1();
+    afx_msg void OnBnClickedButton2();
 };

@@ -31,6 +31,8 @@ void CPoissonAGDlg::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(CPoissonAGDlg, CSimulationDialog)
     ON_WM_PAINT()
     ON_WM_QUERYDRAGICON()
+    ON_BN_CLICKED(IDC_BUTTON1, &CPoissonAGDlg::OnBnClickedButton1)
+    ON_BN_CLICKED(IDC_BUTTON2, &CPoissonAGDlg::OnBnClickedButton2)
 END_MESSAGE_MAP()
 
 
@@ -98,4 +100,33 @@ void CPoissonAGDlg::OnPaint()
 HCURSOR CPoissonAGDlg::OnQueryDragIcon()
 {
     return static_cast<HCURSOR>(m_hIcon);
+}
+
+
+void CPoissonAGDlg::OnSimulation()
+{
+    while (m_bWorking)
+    {
+        Sleep(1000); // stub
+
+        my_plot.RedrawBuffer();
+        my_plot.SwapBuffers();
+
+        Invoke([this] () { my_plot.RedrawWindow(); });
+    }
+    CSimulationDialog::OnSimulation();
+}
+
+
+void CPoissonAGDlg::OnBnClickedButton1()
+{
+    UpdateData(TRUE);
+    StartSimulationThread();
+}
+
+
+void CPoissonAGDlg::OnBnClickedButton2()
+{
+    UpdateData(TRUE);
+    StopSimulationThread();
 }
