@@ -350,4 +350,67 @@ namespace model
         adjust(*md.params, *md.config.world);
         return md;
     }
+
+    inline bool _get_val_intersection(double v1, double v2, double v, double & q)
+    {
+        double r = (v - v1) / (v2 - v1);
+        if (isfinite(r) && (0 < r) && (r < 1))
+        {
+            q = r;
+            return true;
+        }
+        return false;
+    }
+
+    inline void find_isolines(const geom::mesh & m,
+                              const std::vector < double > & d,
+                              double delta,
+                              size_t max_lines,
+                              std::vector < std::vector < geom::point2d_t > > & r)
+    {
+        r.clear();
+        r.resize(max_lines * 2 + 1);
+        for (geom::mesh::idx_t t = 0; t < m.triangles().size(); ++t)
+        {
+            auto & ti = m.triangles()[t];
+            if (ti.flags & (geom::mesh::phantom | geom::mesh::superstruct)) continue;
+            if (m.flags_at(ti.vertices[0]) &
+                m.flags_at(ti.vertices[1]) &
+                m.flags_at(ti.vertices[2]) &
+                (material::magnet1 | material::magnet2)) continue;
+            for (int l = - (int) max_lines; l <= (int) max_lines; ++l)
+            {
+                double val = l * delta;
+                double q;
+                size_t c = 0;
+                if (_get_val_intersection(d[ti.vertices[0]], d[ti.vertices[1]], val, q))
+                {
+                    ++c;
+                    r[(size_t) (l + max_lines)].push_back(
+                        make_line_view(m.point_at(ti.vertices[0]),
+                                       m.point_at(ti.vertices[1])).inner_point(q));
+                }
+                if (_get_val_intersection(d[ti.vertices[0]], d[ti.vertices[2]], val, q))
+                {
+                    ++c;
+                    r[(size_t) (l + max_lines)].push_back(
+                        make_line_view(m.point_at(ti.vertices[0]),
+                                       m.point_at(ti.vertices[2])).inner_point(q));
+                }
+                if (_get_val_intersection(d[ti.vertices[1]], d[ti.vertices[2]], val, q))
+                {
+                    ++c;
+                    r[(size_t) (l + max_lines)].push_back(
+                        make_line_view(m.point_at(ti.vertices[1]),
+                                       m.point_at(ti.vertices[2])).inner_point(q));
+                }
+                /* if occasionally added 1 or 3 points instead of 2;
+                   may occur e.g. when the data contains !isfinite(data) */
+                if ((c % 2) == 1)
+                {
+                    r[(size_t) (l + max_lines)].pop_back();
+                }
+            }
+        }
+    }
 }
