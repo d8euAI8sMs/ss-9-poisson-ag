@@ -111,6 +111,7 @@ namespace model
             nullptr, // no point painter
             pen
         );
+        pd.plot->data_format = data_format;
         return pd;
     }
 
