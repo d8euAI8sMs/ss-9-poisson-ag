@@ -43,4 +43,6 @@ public:
     BOOL m_bDirichletCellsVisible;
     BOOL m_bIsolinesVisible;
     BOOL m_bFieldLinesVisible;
+    UINT m_nIsolineCount;
+    double m_fpIsolineDelta;
 };

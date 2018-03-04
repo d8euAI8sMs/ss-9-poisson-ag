@@ -23,6 +23,8 @@ CPoissonAGDlg::CPoissonAGDlg(CWnd* pParent /*=NULL*/)
     , m_bDirichletCellsVisible(FALSE)
     , m_bIsolinesVisible(TRUE)
     , m_bFieldLinesVisible(TRUE)
+    , m_nIsolineCount(100)
+    , m_fpIsolineDelta(1)
 {
     m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -50,6 +52,8 @@ void CPoissonAGDlg::DoDataExchange(CDataExchange* pDX)
     DDX_Text(pDX, IDC_EDIT12, data.params->m2_qn);
     DDX_Text(pDX, IDC_EDIT13, data.params->dx);
     DDX_Text(pDX, IDC_EDIT14, data.params->dy);
+    DDX_Text(pDX, IDC_EDIT15, m_nIsolineCount);
+    DDX_Text(pDX, IDC_EDIT16, m_fpIsolineDelta);
 }
 
 BEGIN_MESSAGE_MAP(CPoissonAGDlg, CSimulationDialog)
