@@ -346,7 +346,7 @@ namespace model
         md.config = make_plot_config();
         md.params = util::create < parameters > (p);
         md.field_line_data = make_plot_data();
-        md.isoline_data = make_plot_data();
+        md.isoline_data = make_plot_data(plot::palette::pen(), plot::list_data_format::segment);
         md.system_data = make_system_data(*md.params);
         adjust(*md.params, *md.config.world);
         return md;
