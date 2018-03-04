@@ -84,6 +84,7 @@ BOOL CPoissonAGDlg::OnInitDialog()
         data.system_data.dirichlet_cell_plot,
         data.system_data.triangulation_plot,
         data.system_data.system_plot,
+        data.isoline_data.plot,
         data.system_data.point_plot
     }));
 
