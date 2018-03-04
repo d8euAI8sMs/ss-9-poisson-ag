@@ -147,6 +147,15 @@ void CPoissonAGDlg::OnSimulation()
     {
         Sleep(1000); // stub
 
+        model::find_isolines
+        (
+            *data.system_data.mesh,
+            *data.system_data.data,
+            m_fpIsolineDelta,
+            m_nIsolineCount,
+            *data.isoline_data.data
+        );
+
         my_plot.RedrawBuffer();
         my_plot.SwapBuffers();
 
