@@ -52,6 +52,8 @@ void CPoissonAGDlg::DoDataExchange(CDataExchange* pDX)
     DDX_Text(pDX, IDC_EDIT12, data.params->m2_qn);
     DDX_Text(pDX, IDC_EDIT13, data.params->dx);
     DDX_Text(pDX, IDC_EDIT14, data.params->dy);
+    DDX_Text(pDX, IDC_EDIT19, data.params->dxn);
+    DDX_Text(pDX, IDC_EDIT20, data.params->dyn);
     DDX_Text(pDX, IDC_EDIT15, m_nIsolineCount);
     DDX_Text(pDX, IDC_EDIT16, m_fpIsolineDelta);
 }
