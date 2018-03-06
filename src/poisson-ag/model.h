@@ -322,8 +322,34 @@ namespace model
                 md.mesh->add(p0, material::ext | material::bound);
                 continue;
             }
+            if (geom::status::is(g.m1_bb.contains(p0), geom::status::polygon::contains_point) ||
+                geom::status::is(g.m2_bb.contains(p0), geom::status::polygon::contains_point))
+                continue;
             p0.x += (rand() / (RAND_MAX + 1.) - 0.5) * p.dx / 5;
             p0.y += (rand() / (RAND_MAX + 1.) - 0.5) * p.dx / 5;
+            md.mesh->add(p0);
+        }
+
+        double xmin = -p.w / 2,
+               xmax = -p.w / 2 + (n - 1) * p.dx,
+               ymin = -p.h / 2,
+               ymax = -p.h / 2 + (m - 1) * p.dy;
+
+        n = size_t(std::floor(p.w / p.dxn));
+        m = size_t(std::floor(p.h / p.dyn));
+        for (size_t i = 0; i < n; ++i)
+        for (size_t j = 0; j < m; ++j)
+        {
+            auto p0 = geom::make_point(-p.w / 2 + i * p.dxn, -p.h / 2 + j * p.dyn);
+            if ((i == 0) || (i == (n - 1)) || (j == 0) || (j == (m - 1)))
+                continue;
+            if ((p0.x <= xmin) || (p0.x >= xmax) || (p0.y <= ymin) || (p0.y >= ymax))
+                continue;
+            if (geom::status::is_not(g.m1_bb.contains(p0), geom::status::polygon::contains_point) &&
+                geom::status::is_not(g.m2_bb.contains(p0), geom::status::polygon::contains_point))
+                continue;
+            p0.x += (rand() / (RAND_MAX + 1.) - 0.5) * p.dxn / 5;
+            p0.y += (rand() / (RAND_MAX + 1.) - 0.5) * p.dxn / 5;
             if (geom::status::is(g.m1_s.contains(p0), geom::status::polygon::contains_point) ||
                 geom::status::is(g.m1_n.contains(p0), geom::status::polygon::contains_point) ||
                 geom::status::is(g.m2_s.contains(p0), geom::status::polygon::contains_point) ||
