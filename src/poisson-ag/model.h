@@ -311,8 +311,8 @@ namespace model
         md.mesh->add(g.m2_s.points, material::magnet2 | material::south | material::bound);
         md.mesh->add(g.m2_n.points, material::magnet2 | material::north | material::bound);
 
-        size_t n = size_t(std::floor(p.w / p.dx));
-        size_t m = size_t(std::floor(p.h / p.dy));
+        size_t n = size_t(std::floor(p.w / p.dx + 1));
+        size_t m = size_t(std::floor(p.h / p.dy + 1));
         for (size_t i = 0; i < n; ++i)
         for (size_t j = 0; j < m; ++j)
         {
@@ -335,8 +335,8 @@ namespace model
                ymin = -p.h / 2,
                ymax = -p.h / 2 + (m - 1) * p.dy;
 
-        n = size_t(std::floor(p.w / p.dxn));
-        m = size_t(std::floor(p.h / p.dyn));
+        n = size_t(std::floor(p.w / p.dxn + 1));
+        m = size_t(std::floor(p.h / p.dyn + 1));
         for (size_t i = 0; i < n; ++i)
         for (size_t j = 0; j < m; ++j)
         {
