@@ -40,7 +40,7 @@ namespace model
             { -25, 0 }, { 25, 0 },
 
             // other params
-            2, 2,
+            5, 5,
 
             // material params
             1, 1, -1, -1
