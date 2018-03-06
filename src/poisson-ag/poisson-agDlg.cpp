@@ -143,9 +143,10 @@ void CPoissonAGDlg::OnSimulation()
 {
     model::adjust(*data.params, *data.config.world);
     model::update_system_data(*data.params, data.system_data);
+    model::finel_galerkin g(*data.params, data.system_data.mesh);
     while (m_bWorking)
     {
-        Sleep(1000); // stub
+        g.next(*data.system_data.data);
 
         model::find_isolines
         (
