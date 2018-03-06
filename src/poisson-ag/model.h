@@ -64,6 +64,7 @@ namespace model
     struct geom_data
     {
         geom::polygon < > m1_n, m1_s, m2_n, m2_s;
+        geom::polygon < > m1_bb, m2_bb;
     };
 
     struct mesh_data
@@ -188,6 +189,20 @@ namespace model
         return path;
     }
 
+    inline geom::polygon < >
+    make_magnet_bounding_box()
+    {
+        const double w = 1, h = 0.5;
+
+        geom::polygon < > path;
+        path.points.emplace_back(- w / 2, - h / 2);
+        path.points.emplace_back(w / 2, - h / 2);
+        path.points.emplace_back(w / 2, h / 2);
+        path.points.emplace_back(- w / 2, h / 2);
+
+        return path;
+    }
+
     inline geom::polygon < > transform_polygon(const geom::polygon < > & in,
                                                const geom::point2d_t & origin,
                                                double scale_x, double scale_y,
@@ -205,12 +220,15 @@ namespace model
     inline geom_data make_geom(const parameters & p)
     {
         auto base = make_magnet_shape(min(p.dx, p.dy) / max(p.w, p.h));
+        auto bb = make_magnet_bounding_box();
         return
         {
             transform_polygon(base, p.m1_origin, p.m1_scale, p.m1_scale, p.m1_theta),
             transform_polygon(base, p.m1_origin, p.m1_scale, -p.m1_scale, p.m1_theta),
             transform_polygon(base, p.m2_origin, p.m2_scale, p.m2_scale, p.m2_theta),
-            transform_polygon(base, p.m2_origin, p.m2_scale, -p.m2_scale, p.m2_theta)
+            transform_polygon(base, p.m2_origin, p.m2_scale, -p.m2_scale, p.m2_theta),
+            transform_polygon(bb, p.m1_origin, 2 * p.m1_scale, 2 * p.m1_scale, p.m1_theta),
+            transform_polygon(bb, p.m2_origin, 2 * p.m2_scale, 2 * p.m2_scale, p.m2_theta)
         };
     }
 
