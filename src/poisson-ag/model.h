@@ -22,7 +22,7 @@ namespace model
         geom::point2d_t m1_origin, m2_origin;
 
         // other params
-        double dx, dy;
+        double dx, dy, dxn, dyn;
 
         // material params
         double m1_qn, m1_qs, m2_qn, m2_qs;
@@ -40,7 +40,7 @@ namespace model
             { -25, 0 }, { 25, 0 },
 
             // other params
-            5, 5,
+            5, 5, 3, 3,
 
             // material params
             1, 1, -1, -1
