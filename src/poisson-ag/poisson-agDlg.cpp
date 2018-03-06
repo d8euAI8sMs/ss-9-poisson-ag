@@ -24,7 +24,7 @@ CPoissonAGDlg::CPoissonAGDlg(CWnd* pParent /*=NULL*/)
     , m_bIsolinesVisible(TRUE)
     , m_bFieldLinesVisible(TRUE)
     , m_nIsolineCount(100)
-    , m_fpIsolineDelta(1)
+    , m_fpIsolineDelta(0.1)
 {
     m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
