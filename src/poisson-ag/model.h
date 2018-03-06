@@ -204,7 +204,7 @@ namespace model
 
     inline geom_data make_geom(const parameters & p)
     {
-        auto base = make_magnet_shape(min(p.dx, p.dy) / max(p.w, p.h) * 3);
+        auto base = make_magnet_shape(min(p.dx, p.dy) / max(p.w, p.h));
         return
         {
             transform_polygon(base, p.m1_origin, p.m1_scale, p.m1_scale, p.m1_theta),
