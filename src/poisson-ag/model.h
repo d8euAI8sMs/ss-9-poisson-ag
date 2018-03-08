@@ -219,7 +219,7 @@ namespace model
 
     inline geom_data make_geom(const parameters & p)
     {
-        auto base = make_magnet_shape(min(p.dx, p.dy) / max(p.w, p.h));
+        auto base = make_magnet_shape(min(p.dxn, p.dyn) / max(p.w, p.h));
         auto bb = make_magnet_bounding_box();
         return
         {
