@@ -284,9 +284,9 @@ namespace model
     {
         return [&, m] (CDC & dc, const plot::viewport & vp)
         {
-            auto metal_brush  = plot::palette::brush(RGB(0, 0, 0));
+            auto metal_brush  = plot::palette::brush(0xacacac);
 
-            auto point_painter = plot::custom_drawable(plot::circle_painter(3, metal_brush));
+            auto point_painter = plot::custom_drawable(plot::circle_painter(2, metal_brush));
 
             for (geom::mesh::idx_t i = 0; i < m.mesh->vertices().size(); ++i)
             {
@@ -380,9 +380,9 @@ namespace model
         update_system_data(p, md);
 
         md.triangulation_plot = plot::triangulation_drawable::create(
-            plot::make_data_source(md.mesh), nullptr);
+            plot::make_data_source(md.mesh), nullptr, plot::palette::pen(0xffffff));
         md.dirichlet_cell_plot = plot::dirichlet_cell_drawable::create(
-            plot::make_data_source(md.mesh), nullptr, plot::palette::pen(RGB(155, 0, 0)));
+            plot::make_data_source(md.mesh), nullptr, plot::palette::pen(RGB(255, 255, 0)));
         md.system_plot = plot::custom_drawable::create(
             make_system_painter(p, md));
         md.point_plot = plot::custom_drawable::create(
@@ -396,8 +396,8 @@ namespace model
         model_data md;
         md.config = make_plot_config();
         md.params = util::create < parameters > (p);
-        md.field_line_data = make_plot_data(plot::palette::pen(0xff0000));
-        md.isoline_data = make_plot_data(plot::palette::pen(), plot::list_data_format::segment);
+        md.field_line_data = make_plot_data(plot::palette::pen(0x3cff3c, 2));
+        md.isoline_data = make_plot_data(plot::palette::pen(0xffffff, 2), plot::list_data_format::segment);
         md.system_data = make_system_data(*md.params);
         adjust(*md.params, *md.config.world);
         return md;

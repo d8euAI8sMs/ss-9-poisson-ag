@@ -97,7 +97,7 @@ BOOL CPoissonAGDlg::OnInitDialog()
         data.system_data.point_plot
     }));
 
-    my_plot.background = plot::palette::brush(0xffffff);
+    my_plot.background = plot::palette::brush();
     my_plot.triple_buffered = true;
 
     my_plot.RedrawBuffer();
