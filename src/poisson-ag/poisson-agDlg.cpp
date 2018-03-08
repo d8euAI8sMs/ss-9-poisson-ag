@@ -162,6 +162,28 @@ void CPoissonAGDlg::OnSimulation()
             *data.isoline_data.data
         );
 
+        std::vector < geom::mesh::idx_t > hints =
+            data.system_data.geometry->hints;
+
+        if (hints.size() > m_nFieldLineCount)
+        {
+            size_t n = (size_t) std::floor(hints.size() / m_nFieldLineCount + 1);
+            if (n > 1)
+            {
+                hints.resize(hints.size() / n);
+                for (size_t i = 0; i < hints.size(); ++i)
+                {
+                    hints[i] = data.system_data.geometry->hints[i * n];
+                }
+            }
+        }
+
+        model::field_line_finder fnd(
+            data.system_data.mesh,
+            *data.system_data.data,
+            hints);
+        fnd.find(*data.field_line_data.data);
+
         my_plot.RedrawBuffer();
         my_plot.SwapBuffers();
 
