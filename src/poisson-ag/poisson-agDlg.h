@@ -45,4 +45,5 @@ public:
     BOOL m_bFieldLinesVisible;
     UINT m_nIsolineCount;
     double m_fpIsolineDelta;
+    UINT m_nFieldLineCount;
 };
