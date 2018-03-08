@@ -65,6 +65,7 @@ namespace model
     {
         geom::polygon < > m1_n, m1_s, m2_n, m2_s;
         geom::polygon < > m1_bb, m2_bb;
+        std::vector < geom::mesh::idx_t > hints;
     };
 
     struct mesh_data
@@ -306,10 +307,16 @@ namespace model
 
         md.mesh->init(super);
 
-        md.mesh->add(g.m1_s.points, material::magnet1 | material::south | material::bound);
-        md.mesh->add(g.m1_n.points, material::magnet1 | material::north | material::bound);
-        md.mesh->add(g.m2_s.points, material::magnet2 | material::south | material::bound);
-        md.mesh->add(g.m2_n.points, material::magnet2 | material::north | material::bound);
+        std::vector < geom::mesh::idx_t > vs;
+
+        vs = md.mesh->add(g.m1_s.points, material::magnet1 | material::south | material::bound);
+        g.hints.insert(g.hints.begin(), vs.begin(), vs.end());
+        vs = md.mesh->add(g.m1_n.points, material::magnet1 | material::north | material::bound);
+        g.hints.insert(g.hints.begin(), vs.begin(), vs.end());
+        vs = md.mesh->add(g.m2_s.points, material::magnet2 | material::south | material::bound);
+        g.hints.insert(g.hints.begin(), vs.begin(), vs.end());
+        vs = md.mesh->add(g.m2_n.points, material::magnet2 | material::north | material::bound);
+        g.hints.insert(g.hints.begin(), vs.begin(), vs.end());
 
         size_t n = size_t(std::floor(p.w / p.dx + 1));
         size_t m = size_t(std::floor(p.h / p.dy + 1));
