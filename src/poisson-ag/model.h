@@ -460,6 +460,282 @@ namespace model
     }
 
     /* *************************************************
+       *********** Field Line Finder *******************
+       ************************************************* */
+
+    class field_line_finder
+    {
+    private:
+        struct plane { double a, b, c; };
+    private:
+        util::ptr_t < geom::mesh > m;
+        const std::vector < geom::mesh::idx_t > & hints;
+        const std::vector < double > & d;
+        std::vector < std::pair < bool, geom::point2d_t > > n;
+        std::vector < bool > v;
+    public:
+        field_line_finder(util::ptr_t < geom::mesh > m,
+                          const std::vector < double > & d,
+                          const std::vector < geom::mesh::idx_t > & hints)
+            : m(m)
+            , d(d)
+            , hints(hints)
+        {
+        }
+    public:
+        void find(std::vector < std::vector < geom::point2d_t > > & r);
+    private:
+        void _init();
+        bool _normal(geom::mesh::idx_t t, geom::point2d_t & p) const;
+        void _trace(geom::mesh::idx_t i, bool reverse, std::vector < geom::point2d_t > & r);
+        bool _next(geom::mesh::idx_t i, geom::mesh::idx_t t, bool reverse, geom::point2d_t & p) const;
+        bool _next(geom::mesh::idx_t & v0, geom::point2d_t & p, geom::mesh::idx_t & t, bool reverse) const;
+        bool _next_triangle(geom::mesh::idx_t & v0, geom::mesh::idx_t & t0) const;
+    };
+
+    inline bool field_line_finder::_normal(
+        geom::mesh::idx_t t, geom::point2d_t & p) const
+    {
+        auto & ti = m->triangles()[t];
+        auto & p1 = m->point_at(ti.vertices[0]);
+        auto & p2 = m->point_at(ti.vertices[1]);
+        auto & p3 = m->point_at(ti.vertices[2]);
+
+        double d0 = (p2.x - p3.x) * p1.y +
+                    (p3.x - p1.x) * p2.y +
+                    (p1.x - p2.x) * p3.y;
+
+        double n1 = (p3.y - p2.y) * d[ti.vertices[0]] +
+                    (p1.y - p3.y) * d[ti.vertices[1]] +
+                    (p2.y - p1.y) * d[ti.vertices[2]];
+        double n2 = (p2.x - p3.x) * d[ti.vertices[0]] +
+                    (p3.x - p1.x) * d[ti.vertices[1]] +
+                    (p1.x - p2.x) * d[ti.vertices[2]];
+
+        p.x = n1 / d0;
+        p.y = n2 / d0;
+
+        auto n0 = math::norm(p);
+
+        p.x /= n0;
+        p.y /= n0;
+
+        if (!isfinite(p.x) || !isfinite(p.y))
+            return false;
+
+        return true;
+    }
+
+    inline void field_line_finder::find(
+        std::vector < std::vector < geom::point2d_t > > & r)
+    {
+        _init();
+        r.resize(hints.size() * 2);
+        for (size_t i = 0; i < hints.size(); ++i)
+        {
+            r[2 * i].clear();
+            v.clear(); v.resize(m->triangles().size());
+            r[2 * i].push_back(m->point_at(hints[i]));
+            _trace(hints[i], false, r[2 * i]);
+        }
+        for (size_t i = 0; i < hints.size(); ++i)
+        {
+            r[2 * i + 1].clear();
+            v.clear(); v.resize(m->triangles().size());
+            r[2 * i + 1].push_back(m->point_at(hints[i]));
+            _trace(hints[i], true, r[2 * i + 1]);
+        }
+    }
+
+    inline void field_line_finder::_init()
+    {
+        n.resize(m->triangles().size());
+        geom::point2d_t n0;
+        for (geom::mesh::idx_t i = 0; i < m->triangles().size(); ++i)
+        {
+            if (m->triangles()[i].flags &
+                (geom::mesh::phantom | geom::mesh::superstruct))
+                continue;
+            if (_normal(i, n0))
+                n[i] = { true, n0 };
+            else
+                n[i].first = false;
+        }
+    }
+
+    inline void field_line_finder::_trace(
+        geom::mesh::idx_t i, bool reverse, std::vector < geom::point2d_t > & r)
+    {
+        geom::point2d_t p0;
+        auto & nt = m->vertices()[i].neighbor_triangles;
+
+        auto it = nt.begin();
+        for (; it != nt.end(); ++it)
+        {
+            if (_next(i, *it, reverse, p0))
+                break;
+        }
+        if (it == nt.end()) return;
+
+        v[*it] = true;
+        r.push_back(p0);
+
+        geom::mesh::idx_t t = *it;
+        geom::mesh::idx_t v0 = i;
+
+        _next_triangle(v0, t);
+
+        for (;;)
+        {
+            if (v[t])
+                break;
+            v[t] = true;
+            if (!_next(v0, p0, t, reverse))
+                break;
+            r.push_back(p0);
+            if ((v0 == SIZE_T_MAX) || (t == SIZE_T_MAX))
+                break;
+            if ((m->point_at(v0) == p0))
+            {
+                return _trace(v0, reverse, r);
+            }
+        }
+    }
+
+    inline bool field_line_finder::_next(
+        geom::mesh::idx_t i, geom::mesh::idx_t t, bool reverse, geom::point2d_t & p) const
+    {
+        if (!std::get < 0 > (n[t])) return false;
+
+        auto & ti = m->triangles()[t];
+
+        geom::line l1, l2;
+
+        l1.p1 = ((ti.vertices[0] != i) ?
+                    m->point_at(ti.vertices[0]) :
+                    m->point_at(ti.vertices[2]));
+        l1.p2 = ((ti.vertices[1] != i) ?
+                    m->point_at(ti.vertices[1]) :
+                    m->point_at(ti.vertices[2]));
+        l2.p1 = m->point_at(i);
+        l2.p2 = m->point_at(i) + std::get < 1 > (n[t]);
+
+        double q1, q2;
+        auto s = l2.segment_intersection(l1, q1, q2);
+
+        if (!geom::status::is_trusted(s, geom::status::line::intersects | geom::status::line::other_segment))
+            return false;
+
+        if ((q1 > 0) && !reverse || (q1 < 0) && reverse)
+        {
+            p = l2.inner_point(q1);
+            return true;
+        }
+
+        return false;
+    }
+
+
+    inline bool field_line_finder::_next_triangle(
+        geom::mesh::idx_t & v0, geom::mesh::idx_t & t0) const
+    {
+        auto & ti = m->triangles()[t0];
+
+        auto v1 = (ti.vertices[0] == v0) ? ti.vertices[2] : ti.vertices[0];
+        auto v2 = (ti.vertices[1] == v0) ? ti.vertices[2] : ti.vertices[1];
+
+        v0 = SIZE_T_MAX;
+
+        auto & nt = m->vertices()[v1].neighbor_triangles;
+
+        for (auto it = nt.begin(); it != nt.end(); ++it)
+        {
+            if (*it == t0) continue;
+            auto & ti0 = m->triangles()[*it];
+            if ((ti0.vertices[0] == v1) && (ti0.vertices[1] == v2) ||
+                (ti0.vertices[1] == v1) && (ti0.vertices[0] == v2))
+                v0 = ti0.vertices[2];
+            else if ((ti0.vertices[1] == v1) && (ti0.vertices[2] == v2) ||
+                     (ti0.vertices[2] == v1) && (ti0.vertices[1] == v2))
+                v0 = ti0.vertices[0];
+            else if ((ti0.vertices[2] == v1) && (ti0.vertices[0] == v2) ||
+                     (ti0.vertices[0] == v1) && (ti0.vertices[2] == v2))
+                v0 = ti0.vertices[1];
+            else continue;
+            t0 = *it;
+            break;
+        }
+
+        if (v0 == SIZE_T_MAX) t0 = SIZE_T_MAX;
+
+        return v0 != SIZE_T_MAX;
+    }
+
+    inline bool field_line_finder::_next(
+        geom::mesh::idx_t & v0, geom::point2d_t & p, geom::mesh::idx_t & t, bool reverse) const
+    {
+        if (!std::get < 0 > (n[t])) return false;
+
+        auto & ti = m->triangles()[t];
+
+        geom::line l1, l2;
+
+        auto v1 = (ti.vertices[0] == v0) ? ti.vertices[2] : ti.vertices[0];
+        auto v2 = (ti.vertices[1] == v0) ? ti.vertices[2] : ti.vertices[1];
+
+        l1.p1 = m->point_at(v0);
+        l1.p2 = m->point_at(v1);
+        l2.p1 = p;
+        l2.p2 = p + std::get < 1 > (n[t]);
+
+        double q1, q2;
+
+        auto s = l2.segment_intersection(l1, q1, q2);
+
+        bool unsure = false;
+
+        if (geom::status::is_trusted(s, geom::status::line::intersects))
+        {
+            auto t1 = geom::status::get(s, geom::status::line::other_segment);
+            if ((t1 > 0) && ((q1 > 0) && !reverse || (q1 < 0) && reverse))
+            {
+                p = l1.inner_point(q2);
+                v0 = v2;
+                _next_triangle(v0, t);
+                return true;
+            }
+            else if (t1 == 0)
+            {
+                unsure = true;
+            }
+        }
+
+        l1.p2 = m->point_at(v2);
+        l1.invalidate();
+
+        s = l2.segment_intersection(l1, q1, q2);
+
+        if (geom::status::is_trusted(s, geom::status::line::intersects))
+        {
+            auto t1 = geom::status::get(s, geom::status::line::other_segment);
+            if ((t1 > 0) && ((q1 > 0) && !reverse || (q1 < 0) && reverse))
+            {
+                p = l1.inner_point(q2);
+                v0 = v1;
+                _next_triangle(v0, t);
+                return true;
+            }
+            else if ((t1 == 0) && unsure && ((q1 > 0) && !reverse || (q1 < 0) && reverse))
+            {
+                p = m->point_at(v0);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /* *************************************************
        ******** Finite Element Method (Galerkin) *******
        ************************************************* */
 
