@@ -18,14 +18,14 @@ namespace model
         double w, h;
 
         // geometry params
-        double m1_scale, m1_theta, m2_scale, m2_theta;
-        geom::point2d_t m1_origin, m2_origin;
+        double scale_x, scale_y, theta;
+        geom::point2d_t origin;
 
         // other params
         double dx, dy, dxn, dyn;
 
         // material params
-        double m1_qn, m1_qs, m2_qn, m2_qs;
+        double u0;
     };
 
     inline static parameters make_default_parameters()
@@ -36,14 +36,14 @@ namespace model
             100, 100,
 
             // geometry params
-            30, 180, 30, 0,
-            { -25, 0 }, { 25, 0 },
+            60, 10, 0,
+            { 10, 0 },
 
             // other params
             5, 5, 3, 3,
 
             // material params
-            1, 1, -1, -1
+            1
         };
     }
 
@@ -55,16 +55,15 @@ namespace model
         const material_t ext      = 0x1 << (1 + 10);
         const material_t metal    = 0x1 << (2 + 10);
         const material_t dielectr = 0x1 << (3 + 10);
-        const material_t magnet1  = 0x1 << (4 + 10);
-        const material_t magnet2  = 0x1 << (5 + 10);
+        const material_t needle   = 0x1 << (4 + 10);
         const material_t north    = 0x1 << (6 + 10);
         const material_t south    = 0x1 << (7 + 10);
     };
 
     struct geom_data
     {
-        geom::polygon < > m1_n, m1_s, m2_n, m2_s;
-        geom::polygon < > m1_bb, m2_bb;
+        geom::polygon < > needle;
+        geom::polygon < > needle_bb;
         std::vector < geom::mesh::idx_t > hints;
     };
 
@@ -158,7 +157,7 @@ namespace model
     }
 
     inline geom::polygon < >
-    make_magnet_shape(double dl)
+    make_needle_shape(double dl)
     {
         const double w = 1, h = 0.5, s = h / 3,
                      r1 = h / 2, r2 = s / 2;
@@ -166,32 +165,21 @@ namespace model
         geom::polygon < > path;
 
         size_t n;
-        n = size_t(std::floor((w / 4 - r2) / dl));
+        n = size_t(std::floor(h / dl));
         for (size_t i = 0; i < n; ++i)
-            path.points.emplace_back(w / 4 + r2 + i * dl, 0);
-        n = size_t(std::floor(M_PI / 2 * r1 / dl));
+            path.points.emplace_back(-w / 2, -h / 2 + i * dl);
+        n = size_t(std::floor(w / dl));
         for (size_t i = 0; i < n; ++i)
-            path.points.emplace_back(w / 4 + r1 * std::cos(M_PI / 2 / n * i),
-                                     + r1 * std::sin(M_PI / 2 / n * i));
-        n = size_t(std::floor(3 * w / 4 / dl));
+            path.points.emplace_back(-w / 2 + i * dl, h / 2 - h / 2 / w * i * dl);
+        n = size_t(std::floor(w / dl));
         for (size_t i = 0; i < n; ++i)
-            path.points.emplace_back(w / 4 - i * dl, h / 2);
-        n = size_t(std::floor(s / dl));
-        for (size_t i = 0; i < n; ++i)
-            path.points.emplace_back(-w / 2, h / 2 - i * dl);
-        n = size_t(std::floor(3 * w / 4 / dl));
-        for (size_t i = 0; i < n; ++i)
-            path.points.emplace_back(-w / 2 + i * dl, s / 2);
-        n = size_t(std::floor(M_PI / 2 * r2 / dl));
-        for (size_t i = 0; i < n; ++i)
-            path.points.emplace_back(w / 4 + r2 * std::sin(M_PI / 2 / n * i),
-                                     r2 * std::cos(M_PI / 2 / n * i));
+            path.points.emplace_back(w / 2 - i * dl, - h / 2 / w * i * dl);
 
         return path;
     }
 
     inline geom::polygon < >
-    make_magnet_bounding_box()
+    make_needle_bounding_box()
     {
         const double w = 1, h = 0.5;
 
@@ -220,16 +208,12 @@ namespace model
 
     inline geom_data make_geom(const parameters & p)
     {
-        auto base = make_magnet_shape(min(p.dxn, p.dyn) / max(p.w, p.h));
-        auto bb = make_magnet_bounding_box();
+        auto base = make_needle_shape(min(p.dxn, p.dyn) / max(p.w, p.h));
+        auto bb = make_needle_bounding_box();
         return
         {
-            transform_polygon(base, p.m1_origin, p.m1_scale, p.m1_scale, p.m1_theta),
-            transform_polygon(base, p.m1_origin, p.m1_scale, -p.m1_scale, p.m1_theta),
-            transform_polygon(base, p.m2_origin, p.m2_scale, p.m2_scale, p.m2_theta),
-            transform_polygon(base, p.m2_origin, p.m2_scale, -p.m2_scale, p.m2_theta),
-            transform_polygon(bb, p.m1_origin, 2 * p.m1_scale, 2 * p.m1_scale, p.m1_theta),
-            transform_polygon(bb, p.m2_origin, 2 * p.m2_scale, 2 * p.m2_scale, p.m2_theta)
+            transform_polygon(base, p.origin, p.scale_x, p.scale_y, p.theta),
+            transform_polygon(bb, p.origin, 2 * p.scale_x, 2 * p.scale_y, p.theta)
         };
     }
 
@@ -239,42 +223,16 @@ namespace model
         return [&, m] (CDC & dc, const plot::viewport & vp)
         {
             auto border_brush = plot::palette::brush(RGB(0, 0, 0));
-            auto m1_brush = plot::palette::brush(RGB(155, 0, 0));
-            auto m2_brush = plot::palette::brush(RGB(0, 155, 0));
 
-            auto south_pen = plot::palette::pen(RGB(0, 0, 155), 5);
-            auto north_pen = plot::palette::pen(RGB(155, 0, 0), 5);
+            auto needle_pen = plot::palette::pen(RGB(155, 155, 0), 5);
 
-            dc.SelectObject(south_pen.get());
+            dc.SelectObject(needle_pen.get());
 
-            for (size_t i = 0, j = 1; i < m.geometry->m1_s.points.size(); ++i, ++j)
+            for (size_t i = 0, j = 1; i < m.geometry->needle.points.size(); ++i, ++j)
             {
-                if (j == m.geometry->m1_s.points.size()) j = 0;
-                dc.MoveTo(vp.world_to_screen().xy(m.geometry->m1_s.points[i]));
-                dc.LineTo(vp.world_to_screen().xy(m.geometry->m1_s.points[j]));
-            }
-
-            for (size_t i = 0, j = 1; i < m.geometry->m2_s.points.size(); ++i, ++j)
-            {
-                if (j == m.geometry->m2_s.points.size()) j = 0;
-                dc.MoveTo(vp.world_to_screen().xy(m.geometry->m2_s.points[i]));
-                dc.LineTo(vp.world_to_screen().xy(m.geometry->m2_s.points[j]));
-            }
-
-            dc.SelectObject(north_pen.get());
-
-            for (size_t i = 0, j = 1; i < m.geometry->m1_n.points.size(); ++i, ++j)
-            {
-                if (j == m.geometry->m1_n.points.size()) j = 0;
-                dc.MoveTo(vp.world_to_screen().xy(m.geometry->m1_n.points[i]));
-                dc.LineTo(vp.world_to_screen().xy(m.geometry->m1_n.points[j]));
-            }
-
-            for (size_t i = 0, j = 1; i < m.geometry->m2_n.points.size(); ++i, ++j)
-            {
-                if (j == m.geometry->m2_n.points.size()) j = 0;
-                dc.MoveTo(vp.world_to_screen().xy(m.geometry->m2_n.points[i]));
-                dc.LineTo(vp.world_to_screen().xy(m.geometry->m2_n.points[j]));
+                if (j == m.geometry->needle.points.size()) j = 0;
+                dc.MoveTo(vp.world_to_screen().xy(m.geometry->needle.points[i]));
+                dc.LineTo(vp.world_to_screen().xy(m.geometry->needle.points[j]));
             }
         };
     }
@@ -309,13 +267,7 @@ namespace model
 
         std::vector < geom::mesh::idx_t > vs;
 
-        vs = md.mesh->add(g.m1_s.points, material::magnet1 | material::south | material::bound);
-        g.hints.insert(g.hints.begin(), vs.begin(), vs.end());
-        vs = md.mesh->add(g.m1_n.points, material::magnet1 | material::north | material::bound);
-        g.hints.insert(g.hints.begin(), vs.begin(), vs.end());
-        vs = md.mesh->add(g.m2_s.points, material::magnet2 | material::south | material::bound);
-        g.hints.insert(g.hints.begin(), vs.begin(), vs.end());
-        vs = md.mesh->add(g.m2_n.points, material::magnet2 | material::north | material::bound);
+        vs = md.mesh->add(g.needle.points, material::needle | material::bound);
         g.hints.insert(g.hints.begin(), vs.begin(), vs.end());
 
         size_t n = size_t(std::floor(p.w / p.dx + 1));
@@ -329,8 +281,7 @@ namespace model
                 md.mesh->add(p0, material::ext | material::bound);
                 continue;
             }
-            if (geom::status::is(g.m1_bb.contains(p0), geom::status::polygon::contains_point) ||
-                geom::status::is(g.m2_bb.contains(p0), geom::status::polygon::contains_point))
+            if (geom::status::is(g.needle_bb.contains(p0), geom::status::polygon::contains_point))
                 continue;
             p0.x += (rand() / (RAND_MAX + 1.) - 0.5) * p.dx / 5;
             p0.y += (rand() / (RAND_MAX + 1.) - 0.5) * p.dx / 5;
@@ -352,15 +303,11 @@ namespace model
                 continue;
             if ((p0.x <= xmin) || (p0.x >= xmax) || (p0.y <= ymin) || (p0.y >= ymax))
                 continue;
-            if (geom::status::is_not(g.m1_bb.contains(p0), geom::status::polygon::contains_point) &&
-                geom::status::is_not(g.m2_bb.contains(p0), geom::status::polygon::contains_point))
+            if (geom::status::is_not(g.needle_bb.contains(p0), geom::status::polygon::contains_point))
                 continue;
             p0.x += (rand() / (RAND_MAX + 1.) - 0.5) * p.dxn / 5;
             p0.y += (rand() / (RAND_MAX + 1.) - 0.5) * p.dxn / 5;
-            if (geom::status::is(g.m1_s.contains(p0), geom::status::polygon::contains_point) ||
-                geom::status::is(g.m1_n.contains(p0), geom::status::polygon::contains_point) ||
-                geom::status::is(g.m2_s.contains(p0), geom::status::polygon::contains_point) ||
-                geom::status::is(g.m2_n.contains(p0), geom::status::polygon::contains_point))
+            if (geom::status::is(g.needle.contains(p0), geom::status::polygon::contains_point))
                 continue;
             md.mesh->add(p0);
         }
@@ -429,7 +376,7 @@ namespace model
             if (m.flags_at(ti.vertices[0]) &
                 m.flags_at(ti.vertices[1]) &
                 m.flags_at(ti.vertices[2]) &
-                (material::magnet1 | material::magnet2)) continue;
+                material::needle) continue;
             for (int l = - (int) max_lines; l <= (int) max_lines; ++l)
             {
                 double val = l * delta;
@@ -792,21 +739,13 @@ namespace model
     inline bool finel_galerkin::_is_var(geom::mesh::idx_t v) const
     {
         return (m->flags_at(v) &
-                (material::ext | material::magnet1 | material::magnet2)) == 0;
+                (material::ext | material::needle)) == 0;
     }
 
     inline double finel_galerkin::_charge_of(geom::mesh::idx_t i) const
     {
-        if (m->flags_at(i) & material::north)
-            if (m->flags_at(i) & material::magnet1)
-                return p.m1_qn;
-            else
-                return p.m2_qn;
-        else if (m->flags_at(i) & material::south)
-            if (m->flags_at(i) & material::magnet1)
-                return p.m1_qs;
-            else
-                return p.m2_qs;
+        if (m->flags_at(i) & material::needle)
+            return p.u0;
         return 0;
     }
 
