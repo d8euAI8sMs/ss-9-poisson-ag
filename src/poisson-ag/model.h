@@ -21,6 +21,7 @@ namespace model
 
         // geometry params
         double r, dr;
+        geom::point2d_t b;
 
         // other params
         double s, ds;
@@ -34,10 +35,11 @@ namespace model
         return
         {
             // system params
-            200, 200,
+            250, 250,
 
             // geometry params
             50, 0,
+            { 120, 120 },
 
             // other params
             10, 1.3,
@@ -64,6 +66,7 @@ namespace model
     struct geom_data
     {
         geom::polygon < > circle;
+        geom::polygon < > circle2;
         std::vector < geom::mesh::idx_t > hints;
         std::map < geom::mesh::idx_t, std::pair < geom::mesh::idx_t, geom::mesh::idx_t > > bc_neighbors;
     };
@@ -189,7 +192,8 @@ namespace model
         auto base = make_circle_shape(p.s / p.r);
         return
         {
-            transform_polygon(base, { 0, 0 }, p.r)
+            transform_polygon(base, { 0, 0 }, p.r),
+            transform_polygon(base, p.b, p.r)
         };
     }
 
@@ -209,6 +213,13 @@ namespace model
                 if (j == m.geometry->circle.points.size()) j = 0;
                 dc.MoveTo(vp.world_to_screen().xy(m.geometry->circle.points[i]));
                 dc.LineTo(vp.world_to_screen().xy(m.geometry->circle.points[j]));
+            }
+
+            for (size_t i = 0, j = 1; i < m.geometry->circle2.points.size(); ++i, ++j)
+            {
+                if (j == m.geometry->circle2.points.size()) j = 0;
+                dc.MoveTo(vp.world_to_screen().xy(m.geometry->circle2.points[i]));
+                dc.LineTo(vp.world_to_screen().xy(m.geometry->circle2.points[j]));
             }
         };
     }
@@ -304,6 +315,34 @@ namespace model
             auto cl = make_circle_shape(s0 / r0);
             cl = transform_polygon(cl, { 0, 0 }, r0);
             md.mesh->add(cl.points.begin(), cl.points.end(), material::ext | material::bound);
+        }
+
+        /* other circle */
+
+        md.mesh->add(p.b);
+
+        r0 = p.s;
+        while (r0 < p.r - 1.5 * p.s)
+        {
+            auto cl = make_circle_shape(p.s / r0);
+            cl = transform_polygon(cl, p.b, r0);
+            md.mesh->add(cl.points.begin(), cl.points.end());
+            r0 += p.s;
+        }
+
+        r0 = p.r;
+        {
+            auto cl = make_circle_shape(p.s / r0);
+            auto cm = transform_polygon(cl, p.b, r0 - p.s);
+            auto cp = transform_polygon(cl, p.b, r0 + p.s);
+            cl = transform_polygon(cl, p.b, r0);
+            auto idxm = md.mesh->add(cm.points.begin(), cm.points.end());
+            auto idxl = md.mesh->add(cl.points.begin(), cl.points.end(), material::bound | material::circle_bound);
+            auto idxp = md.mesh->add(cp.points.begin(), cp.points.end());
+            for (size_t i = 0; i < idxl.size(); ++i)
+            {
+                md.geometry->bc_neighbors[idxl[i]] = { idxm[i], idxp[i] };
+            }
         }
 
         md.mesh->finish_mesh();

@@ -47,6 +47,8 @@ void CPoissonAGDlg::DoDataExchange(CDataExchange* pDX)
     DDX_Text(pDX, IDC_EDIT9,  data.params->ds);
     DDX_Text(pDX, IDC_EDIT13, data.params->q0);
     DDX_Text(pDX, IDC_EDIT21, data.params->eps);
+    DDX_Text(pDX, IDC_EDIT6, data.params->b.x);
+    DDX_Text(pDX, IDC_EDIT7, data.params->b.y);
     DDX_Text(pDX, IDC_EDIT15, m_nIsolineCount);
     DDX_Text(pDX, IDC_EDIT16, m_fpIsolineDelta);
     DDX_Text(pDX, IDC_EDIT17, m_nFieldLineCount);
