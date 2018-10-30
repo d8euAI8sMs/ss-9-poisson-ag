@@ -39,16 +39,14 @@ void CPoissonAGDlg::DoDataExchange(CDataExchange* pDX)
     DDX_Check(pDX, IDC_CHECK1, m_bDirichletCellsVisible);
     DDX_Check(pDX, IDC_CHECK4, m_bIsolinesVisible);
     DDX_Check(pDX, IDC_CHECK5, m_bFieldLinesVisible);
-    DDX_Text(pDX, IDC_EDIT1,  data.params->scale_x);
-    DDX_Text(pDX, IDC_EDIT5,  data.params->scale_y);
-    DDX_Text(pDX, IDC_EDIT2,  data.params->origin.x);
-    DDX_Text(pDX, IDC_EDIT3,  data.params->origin.y);
-    DDX_Text(pDX, IDC_EDIT4,  data.params->theta);
-    DDX_Text(pDX, IDC_EDIT9,  data.params->u0);
-    DDX_Text(pDX, IDC_EDIT13, data.params->dx);
-    DDX_Text(pDX, IDC_EDIT14, data.params->dy);
-    DDX_Text(pDX, IDC_EDIT19, data.params->dxn);
-    DDX_Text(pDX, IDC_EDIT20, data.params->dyn);
+    DDX_Text(pDX, IDC_EDIT1,  data.params->w);
+    DDX_Text(pDX, IDC_EDIT5,  data.params->h);
+    DDX_Text(pDX, IDC_EDIT2,  data.params->r);
+    DDX_Text(pDX, IDC_EDIT3,  data.params->dr);
+    DDX_Text(pDX, IDC_EDIT4,  data.params->s);
+    DDX_Text(pDX, IDC_EDIT9,  data.params->ds);
+    DDX_Text(pDX, IDC_EDIT13, data.params->q0);
+    DDX_Text(pDX, IDC_EDIT21, data.params->eps);
     DDX_Text(pDX, IDC_EDIT15, m_nIsolineCount);
     DDX_Text(pDX, IDC_EDIT16, m_fpIsolineDelta);
     DDX_Text(pDX, IDC_EDIT17, m_nFieldLineCount);
@@ -142,7 +140,7 @@ void CPoissonAGDlg::OnSimulation()
 {
     model::adjust(*data.params, *data.config.world);
     model::update_system_data(*data.params, data.system_data);
-    model::finel_galerkin g(*data.params, data.system_data.mesh);
+    model::finel_galerkin g(*data.params, *data.system_data.geometry, data.system_data.mesh);
     while (m_bWorking)
     {
         g.next(*data.system_data.data);

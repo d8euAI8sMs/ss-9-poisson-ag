@@ -2,6 +2,8 @@
 
 #include <afxwin.h>
 
+#include <map>
+
 #include <util/common/geom/geom.h>
 #include <util/common/plot/plot.h>
 #include <util/common/plot/triangulation_drawable.h>
@@ -18,14 +20,13 @@ namespace model
         double w, h;
 
         // geometry params
-        double scale_x, scale_y, theta;
-        geom::point2d_t origin;
+        double r, dr;
 
         // other params
-        double dx, dy, dxn, dyn;
+        double s, ds;
 
         // material params
-        double u0;
+        double eps, q0;
     };
 
     inline static parameters make_default_parameters()
@@ -33,17 +34,16 @@ namespace model
         return
         {
             // system params
-            100, 100,
+            200, 200,
 
             // geometry params
-            60, 10, 0,
-            { 10, 0 },
+            50, 0,
 
             // other params
-            5, 5, 3, 3,
+            10, 1.3,
 
             // material params
-            1
+            2, 1
         };
     }
 
@@ -55,16 +55,17 @@ namespace model
         const material_t ext      = 0x1 << (1 + 10);
         const material_t metal    = 0x1 << (2 + 10);
         const material_t dielectr = 0x1 << (3 + 10);
-        const material_t needle   = 0x1 << (4 + 10);
-        const material_t north    = 0x1 << (6 + 10);
-        const material_t south    = 0x1 << (7 + 10);
+        const material_t circle   = 0x1 << (4 + 10);
+        const material_t charge_neighbor = 0x1 << (5 + 10);
+        const material_t charge   = 0x1 << (6 + 10);
+        const material_t circle_bound = 0x1 << (4 + 10);
     };
 
     struct geom_data
     {
-        geom::polygon < > needle;
-        geom::polygon < > needle_bb;
+        geom::polygon < > circle;
         std::vector < geom::mesh::idx_t > hints;
+        std::map < geom::mesh::idx_t, std::pair < geom::mesh::idx_t, geom::mesh::idx_t > > bc_neighbors;
     };
 
     struct mesh_data
@@ -119,8 +120,8 @@ namespace model
     inline static void adjust(const parameters & p,
                               plot::world_t & world)
     {
-        world.xmin = - (world.xmax = p.w / 2);
-        world.ymin = - (world.ymax = p.h / 2);
+        world.xmin = - (world.xmax = p.w);
+        world.ymin = - (world.ymax = p.h);
     }
 
     inline static plot::drawable::ptr_t make_root_drawable
@@ -157,63 +158,38 @@ namespace model
     }
 
     inline geom::polygon < >
-    make_needle_shape(double dl)
+    make_circle_shape(double dl)
     {
-        const double w = 1, h = 0.5, s = h / 3,
-                     r1 = h / 2, r2 = s / 2;
+        const double r = 1;
 
         geom::polygon < > path;
 
-        size_t n;
-        n = size_t(std::floor(h / dl));
+        size_t n = size_t(std::floor(2 * M_PI * r / dl));
         for (size_t i = 0; i < n; ++i)
-            path.points.emplace_back(-w / 2, -h / 2 + i * dl);
-        n = size_t(std::floor(w / dl));
-        for (size_t i = 0; i < n; ++i)
-            path.points.emplace_back(-w / 2 + i * dl, h / 2 - h / 2 / w * i * dl);
-        n = size_t(std::floor(w / dl));
-        for (size_t i = 0; i < n; ++i)
-            path.points.emplace_back(w / 2 - i * dl, - h / 2 / w * i * dl);
-
-        return path;
-    }
-
-    inline geom::polygon < >
-    make_needle_bounding_box()
-    {
-        const double w = 1, h = 0.5;
-
-        geom::polygon < > path;
-        path.points.emplace_back(- w / 2, - h / 2);
-        path.points.emplace_back(w / 2, - h / 2);
-        path.points.emplace_back(w / 2, h / 2);
-        path.points.emplace_back(- w / 2, h / 2);
+            path.points.emplace_back(r * std::sin(2 * M_PI / n * i),
+                                     r * std::cos(2 * M_PI / n * i));
 
         return path;
     }
 
     inline geom::polygon < > transform_polygon(const geom::polygon < > & in,
                                                const geom::point2d_t & origin,
-                                               double scale_x, double scale_y,
-                                               double theta)
+                                               double scale)
     {
         auto p = in;
         for (size_t i = 0; i < p.points.size(); ++i)
         {
-            auto p0 = geom::point2d_t(p.points[i].x * scale_x, p.points[i].y * scale_y);
-            p.points[i] = p0.rotate(theta / 180 * M_PI) + origin;
+            p.points[i] = p.points[i] * scale + origin;
         }
         return p;
     }
 
     inline geom_data make_geom(const parameters & p)
     {
-        auto base = make_needle_shape(min(p.dxn, p.dyn) / max(p.w, p.h));
-        auto bb = make_needle_bounding_box();
+        auto base = make_circle_shape(p.s / p.r);
         return
         {
-            transform_polygon(base, p.origin, p.scale_x, p.scale_y, p.theta),
-            transform_polygon(bb, p.origin, 2 * p.scale_x, 2 * p.scale_y, p.theta)
+            transform_polygon(base, { 0, 0 }, p.r)
         };
     }
 
@@ -224,15 +200,15 @@ namespace model
         {
             auto border_brush = plot::palette::brush(RGB(0, 0, 0));
 
-            auto needle_pen = plot::palette::pen(RGB(155, 155, 0), 5);
+            auto circle_pen = plot::palette::pen(RGB(155, 155, 0), 5);
 
-            dc.SelectObject(needle_pen.get());
+            dc.SelectObject(circle_pen.get());
 
-            for (size_t i = 0, j = 1; i < m.geometry->needle.points.size(); ++i, ++j)
+            for (size_t i = 0, j = 1; i < m.geometry->circle.points.size(); ++i, ++j)
             {
-                if (j == m.geometry->needle.points.size()) j = 0;
-                dc.MoveTo(vp.world_to_screen().xy(m.geometry->needle.points[i]));
-                dc.LineTo(vp.world_to_screen().xy(m.geometry->needle.points[j]));
+                if (j == m.geometry->circle.points.size()) j = 0;
+                dc.MoveTo(vp.world_to_screen().xy(m.geometry->circle.points[i]));
+                dc.LineTo(vp.world_to_screen().xy(m.geometry->circle.points[j]));
             }
         };
     }
@@ -257,7 +233,7 @@ namespace model
     {
         std::vector < geom::point2d_t > super =
         {
-            { -p.w, -p.h }, { p.w, -p.h }, { p.w, p.h }, { -p.w, p.h },
+            { -2*p.w, -2*p.h }, { 2*p.w, -2*p.h }, { 2*p.w, 2*p.h }, { -2*p.w, 2*p.h },
         };
 
         *md.geometry = make_geom(p);
@@ -265,51 +241,69 @@ namespace model
 
         md.mesh->init(super);
 
-        std::vector < geom::mesh::idx_t > vs;
+        double r0, s0;
 
-        vs = md.mesh->add(g.needle.points, material::needle | material::bound);
-        g.hints.insert(g.hints.begin(), vs.begin(), vs.end());
+        md.mesh->add({ 0, p.r * p.dr }, material::ext | material::bound | material::charge);
 
-        size_t n = size_t(std::floor(p.w / p.dx + 1));
-        size_t m = size_t(std::floor(p.h / p.dy + 1));
-        for (size_t i = 0; i < n; ++i)
-        for (size_t j = 0; j < m; ++j)
+        s0 = p.s / 5;
+        r0 = s0;
         {
-            auto p0 = geom::make_point(-p.w / 2 + i * p.dx, -p.h / 2 + j * p.dy);
-            if ((i == 0) || (i == (n - 1)) || (j == 0) || (j == (m - 1)))
-            {
-                md.mesh->add(p0, material::ext | material::bound);
-                continue;
-            }
-            if (geom::status::is(g.needle_bb.contains(p0), geom::status::polygon::contains_point))
-                continue;
-            p0.x += (rand() / (RAND_MAX + 1.) - 0.5) * p.dx / 5;
-            p0.y += (rand() / (RAND_MAX + 1.) - 0.5) * p.dx / 5;
-            md.mesh->add(p0);
+            auto cl = make_circle_shape(s0 / r0);
+            cl = transform_polygon(cl, { 0, p.r * p.dr }, r0);
+            md.mesh->add(cl.points.begin(), cl.points.end(), material::bound | material::charge_neighbor);
         }
 
-        double xmin = -p.w / 2,
-               xmax = -p.w / 2 + (n - 1) * p.dx,
-               ymin = -p.h / 2,
-               ymax = -p.h / 2 + (m - 1) * p.dy;
-
-        n = size_t(std::floor(p.w / p.dxn + 1));
-        m = size_t(std::floor(p.h / p.dyn + 1));
-        for (size_t i = 0; i < n; ++i)
-        for (size_t j = 0; j < m; ++j)
+        r0 = 2 * s0;
+        while (r0 < min(p.s, p.r - p.r * p.dr))
         {
-            auto p0 = geom::make_point(-p.w / 2 + i * p.dxn, -p.h / 2 + j * p.dyn);
-            if ((i == 0) || (i == (n - 1)) || (j == 0) || (j == (m - 1)))
-                continue;
-            if ((p0.x <= xmin) || (p0.x >= xmax) || (p0.y <= ymin) || (p0.y >= ymax))
-                continue;
-            if (geom::status::is_not(g.needle_bb.contains(p0), geom::status::polygon::contains_point))
-                continue;
-            p0.x += (rand() / (RAND_MAX + 1.) - 0.5) * p.dxn / 5;
-            p0.y += (rand() / (RAND_MAX + 1.) - 0.5) * p.dxn / 5;
-            if (geom::status::is(g.needle.contains(p0), geom::status::polygon::contains_point))
-                continue;
-            md.mesh->add(p0);
+            auto cl = make_circle_shape(s0 / r0);
+            cl = transform_polygon(cl, { 0, p.r * p.dr }, r0);
+            md.mesh->add(cl.points.begin(), cl.points.end());
+            r0 += s0;
+        }
+
+        r0 = p.s;
+        while (r0 < p.r - 1.5 * p.s)
+        {
+            auto cl = make_circle_shape(p.s / r0);
+            cl = transform_polygon(cl, { 0, 0 }, r0);
+            md.mesh->add(cl.points.begin(), cl.points.end());
+            r0 += p.s;
+        }
+
+        r0 = p.r;
+        {
+            auto cl = make_circle_shape(p.s / r0);
+            auto cm = transform_polygon(cl, { 0, 0 }, r0 - p.s);
+            auto cp = transform_polygon(cl, { 0, 0 }, r0 + p.s);
+            cl = transform_polygon(cl, { 0, 0 }, r0);
+            auto idxm = md.mesh->add(cm.points.begin(), cm.points.end());
+            auto idxl = md.mesh->add(cl.points.begin(), cl.points.end(), material::bound | material::circle_bound);
+            auto idxp = md.mesh->add(cp.points.begin(), cp.points.end());
+            for (size_t i = 0; i < idxl.size(); ++i)
+            {
+                md.geometry->bc_neighbors[idxl[i]] = { idxm[i], idxp[i] };
+                g.hints.insert(g.hints.begin(), idxl.begin(), idxl.end());
+            }
+        }
+
+        s0 = p.s;
+        r0 = p.r + 2 * s0;
+        while (r0 < max(p.w, p.h))
+        {
+            auto cl = make_circle_shape(s0 / r0);
+            cl = transform_polygon(cl, { 0, 0 }, r0);
+            md.mesh->add(cl.points.begin(), cl.points.end());
+            r0 += s0;
+            s0 += p.s * p.ds;
+        }
+
+        r0 = 1.5 * max(p.w, p.h);
+
+        {
+            auto cl = make_circle_shape(s0 / r0);
+            cl = transform_polygon(cl, { 0, 0 }, r0);
+            md.mesh->add(cl.points.begin(), cl.points.end(), material::ext | material::bound);
         }
 
         md.mesh->finish_mesh();
@@ -376,7 +370,7 @@ namespace model
             if (m.flags_at(ti.vertices[0]) &
                 m.flags_at(ti.vertices[1]) &
                 m.flags_at(ti.vertices[2]) &
-                material::needle) continue;
+                material::circle) continue;
             for (int l = - (int) max_lines; l <= (int) max_lines; ++l)
             {
                 double val = l * delta;
@@ -711,13 +705,17 @@ namespace model
         std::vector < double > x;
         /* mapping: variable -> mesh vertice */
         std::vector < geom::mesh::idx_t > vars;
+        std::vector < geom::mesh::idx_t > vars_rev;
         const size_t iters;
         const parameters & p;
+        const geom_data & gd;
     public:
         finel_galerkin(const parameters & p,
+                       const geom_data & gd,
                        util::ptr_t < geom::mesh > m,
                        size_t iters = 100)
             : p(p)
+            , gd(gd)
             , m(m)
             , iters(iters)
         {
@@ -739,13 +737,19 @@ namespace model
     inline bool finel_galerkin::_is_var(geom::mesh::idx_t v) const
     {
         return (m->flags_at(v) &
-                (material::ext | material::needle)) == 0;
+                (material::ext | material::bound)) == 0;
     }
 
     inline double finel_galerkin::_charge_of(geom::mesh::idx_t i) const
     {
-        if (m->flags_at(i) & material::needle)
-            return p.u0;
+        if (m->flags_at(i) & material::charge_neighbor)
+            return p.q0 / p.eps / math::norm(geom::make_point(0, p.r * p.dr) - m->point_at(i));
+        if (m->flags_at(i) & material::circle_bound)
+        {
+            auto f1 = x[vars_rev[gd.bc_neighbors.at(i).first]],
+                 f2 = x[vars_rev[gd.bc_neighbors.at(i).second]];
+            return (p.eps * f1 + f2) / (p.eps + 1);
+        }
         return 0;
     }
 
@@ -826,14 +830,30 @@ namespace model
 
     inline void finel_galerkin::_init()
     {
-        if (!vars.empty()) return;
+        if (!vars.empty())
+        {
+            for (geom::mesh::idx_t j = 0, vj = 0; j < m->vertices().size(); ++j)
+            {
+                if (!_is_var(j)) continue;
+                c[vj] = 0;
+                for (geom::mesh::idx_t i = 0, vi = 0; i < m->vertices().size(); ++i)
+                {
+                    if (!_is_var(i))
+                        c[vj] += - _charge_of(i) * _dot(i, j);
+                }
+                ++vj;
+            }
+            return;
+        }
 
         vars.resize(m->vertices().size());
+        vars_rev.resize(m->vertices().size(), -1);
         geom::mesh::idx_t var = 0;
         for (geom::mesh::idx_t i = 0; i < m->vertices().size(); ++i)
         {
             if (!_is_var(i)) continue;
             vars[var] = i;
+            vars_rev[i] = var;
             ++var;
         }
         vars.resize(var);
