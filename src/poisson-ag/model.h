@@ -879,7 +879,7 @@ namespace model
         if (m->flags_at(i) & material::charge_neighbor)
             return p.q0 / p.eps / math::norm(geom::make_point(p.r * p.dr.x, p.r * p.dr.y) - m->point_at(i));
         if (m->flags_at(i) & material::charge2_neighbor)
-            return p.q02 / p.eps / math::norm(geom::make_point(p.r * p.dr.x + p.b.x, p.r * p.dr.y + p.b.y) - m->point_at(i));
+            return p.q02 / p.eps / math::norm(geom::make_point(p.r * p.dr2.x + p.b.x, p.r * p.dr2.y + p.b.y) - m->point_at(i));
         if (m->flags_at(i) & material::circle_bound)
         {
             auto f1 = x[vars_rev[gd.bc_neighbors.at(i).first]],
