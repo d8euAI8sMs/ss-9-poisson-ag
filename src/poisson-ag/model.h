@@ -418,6 +418,12 @@ namespace model
             }
         }
 
+        // try to add q0 and q02 as regular points
+        // may be helpful when the interaction energy
+        // or something like it should be calculated
+        md.mesh->add(pdr);
+        md.mesh->add(pdr2 + p.b);
+
         md.mesh->finish_mesh();
 
         md.data = util::create < std::vector < double > > (md.mesh->vertices().size());
