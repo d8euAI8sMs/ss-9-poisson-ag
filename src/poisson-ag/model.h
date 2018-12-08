@@ -22,6 +22,7 @@ namespace model
         // geometry params
         double r;           /**< sphere radius           */
         geom::point2d_t dr; /**< charge displacement, [0,1]  */
+        geom::point2d_t dr2; /**< charge displacement, [0,1]  */
         geom::point2d_t b;  /**< 2nd sphere displacement */
 
         // other params
@@ -30,7 +31,8 @@ namespace model
                                  the sphere              */
 
         // material params
-        double eps, q0;
+        double eps, q0, q02;
+        BOOL has_q0, has_q02;
     };
 
     inline static parameters make_default_parameters()
@@ -41,14 +43,15 @@ namespace model
             250, 250,
 
             // geometry params
-            50, { 0, 0 },
+            50, { 0, 0 }, { 0, 0 },
             { 120, 120 },
 
             // other params
             10, 1.3,
 
             // material params
-            2, 1
+            2, 1, -1,
+            TRUE, FALSE
         };
     }
 
@@ -63,6 +66,8 @@ namespace model
         const material_t circle   = 0x1 << (4 + 10);
         const material_t charge_neighbor = 0x1 << (5 + 10);
         const material_t charge   = 0x1 << (6 + 10);
+        const material_t charge2_neighbor = 0x1 << (7 + 10);
+        const material_t charge2   = 0x1 << (8 + 10);
         const material_t circle_bound = 0x1 << (4 + 10);
     };
 
@@ -258,24 +263,29 @@ namespace model
         double r0, s0;
         geom::point2d_t pdr = { p.r * p.dr.x, p.r * p.dr.y };
         double pdrn = math::norm(pdr);
+        geom::point2d_t pdr2 = { p.r * p.dr.x, p.r * p.dr.y };
+        double pdrn2 = math::norm(pdr2);
 
-        md.mesh->add(pdr, material::ext | material::bound | material::charge);
-
-        s0 = p.s / 5;
-        r0 = s0;
+        if (p.has_q0)
         {
-            auto cl = make_circle_shape(s0 / r0);
-            cl = transform_polygon(cl, pdr, r0);
-            md.mesh->add(cl.points.begin(), cl.points.end(), material::bound | material::charge_neighbor);
-        }
+            md.mesh->add(pdr, material::ext | material::bound | material::charge);
 
-        r0 = 2 * s0;
-        while (r0 < min(p.s, p.r - pdrn))
-        {
-            auto cl = make_circle_shape(s0 / r0);
-            cl = transform_polygon(cl, pdr, r0);
-            md.mesh->add(cl.points.begin(), cl.points.end());
-            r0 += s0;
+            s0 = p.s / 5;
+            r0 = s0;
+            {
+                auto cl = make_circle_shape(s0 / r0);
+                cl = transform_polygon(cl, pdr, r0);
+                md.mesh->add(cl.points.begin(), cl.points.end(), material::bound | material::charge_neighbor);
+            }
+
+            r0 = 2 * s0;
+            while (r0 < min(p.s, p.r - pdrn))
+            {
+                auto cl = make_circle_shape(s0 / r0);
+                cl = transform_polygon(cl, pdr, r0);
+                md.mesh->add(cl.points.begin(), cl.points.end());
+                r0 += s0;
+            }
         }
 
         r0 = p.s;
@@ -323,6 +333,28 @@ namespace model
         }
 
         /* other circle */
+
+        if (p.has_q02)
+        {
+            md.mesh->add(pdr2 + p.b, material::ext | material::bound | material::charge2);
+
+            s0 = p.s / 5;
+            r0 = s0;
+            {
+                auto cl = make_circle_shape(s0 / r0);
+                cl = transform_polygon(cl, pdr2 + p.b, r0);
+                md.mesh->add(cl.points.begin(), cl.points.end(), material::bound | material::charge2_neighbor);
+            }
+
+            r0 = 2 * s0;
+            while (r0 < min(p.s, p.r - pdrn2))
+            {
+                auto cl = make_circle_shape(s0 / r0);
+                cl = transform_polygon(cl, pdr2 + p.b, r0);
+                md.mesh->add(cl.points.begin(), cl.points.end());
+                r0 += s0;
+            }
+        }
 
         md.mesh->add(p.b);
 
@@ -788,6 +820,8 @@ namespace model
     {
         if (m->flags_at(i) & material::charge_neighbor)
             return p.q0 / p.eps / math::norm(geom::make_point(p.r * p.dr.x, p.r * p.dr.y) - m->point_at(i));
+        if (m->flags_at(i) & material::charge2_neighbor)
+            return p.q02 / p.eps / math::norm(geom::make_point(p.r * p.dr.x + p.b.x, p.r * p.dr.y + p.b.y) - m->point_at(i));
         if (m->flags_at(i) & material::circle_bound)
         {
             auto f1 = x[vars_rev[gd.bc_neighbors.at(i).first]],
