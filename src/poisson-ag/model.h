@@ -418,13 +418,29 @@ namespace model
             }
         }
 
-        // try to add q0 and q02 as regular points
+        // explicitly add sphere centers to mesh
         // may be helpful when the interaction energy
         // or something like it should be calculated
-        md.mesh->add(pdr);
-        md.mesh->add(pdr2 + p.b);
+        md.mesh->add({ 0, 0 });
+        md.mesh->add(p.b);
+
+        // add some neighborhood in order to calculate
+        // some mean values on it
+        s0 = p.s / 3;
+        r0 = s0;
+        {
+            auto cl = make_circle_shape(s0 / r0);
+            cl = transform_polygon(cl, { 0, 0 }, r0);
+            md.mesh->add(cl.points.begin(), cl.points.end());
+        }
+        {
+            auto cl = make_circle_shape(s0 / r0);
+            cl = transform_polygon(cl, p.b, r0);
+            md.mesh->add(cl.points.begin(), cl.points.end());
+        }
 
         md.mesh->finish_mesh();
+        md.mesh->build_neighborhood_tree();
 
         md.data = util::create < std::vector < double > > (md.mesh->vertices().size());
     }
