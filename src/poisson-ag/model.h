@@ -20,11 +20,14 @@ namespace model
         double w, h;
 
         // geometry params
-        double r, dr;
-        geom::point2d_t b;
+        double r;           /**< sphere radius           */
+        double dr;          /**< charge displacement, [0,1]  */
+        geom::point2d_t b;  /**< 2nd sphere displacement */
 
         // other params
-        double s, ds;
+        double s, ds;       /**< mean gap in the grid and
+                                 the gap grow rate outside
+                                 the sphere              */
 
         // material params
         double eps, q0;
