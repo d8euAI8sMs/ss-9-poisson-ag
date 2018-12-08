@@ -271,7 +271,7 @@ namespace model
         double r0, s0;
         geom::point2d_t pdr = { p.r * p.dr.x, p.r * p.dr.y };
         double pdrn = math::norm(pdr);
-        geom::point2d_t pdr2 = { p.r * p.dr.x, p.r * p.dr.y };
+        geom::point2d_t pdr2 = { p.r * p.dr2.x, p.r * p.dr2.y };
         double pdrn2 = math::norm(pdr2);
 
         if (p.has_1)
