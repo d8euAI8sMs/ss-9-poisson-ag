@@ -7,6 +7,7 @@
 #include <util/common/gui/PlotControl.h>
 
 #include "model.h"
+#include "afxwin.h"
 
 // CPoissonAGDlg dialog
 class CPoissonAGDlg : public CSimulationDialog
@@ -28,6 +29,20 @@ protected:
     model::model_data data;
     model::parameters params;
 
+    enum _simmode {
+        simmode_default,
+        simmode_rev,
+        simmode_dipole1_calc,
+        simmode_dipole2_calc
+    } simmode;
+
+    struct _udata
+    {
+        CEdit U1, U2, Ud;
+        CEdit d1x, d1y, d2x, d2y;
+        geom::point2d_t d1, d2;
+    } udata;
+
     // Generated message map functions
     virtual BOOL OnInitDialog();
     afx_msg void OnPaint();
@@ -47,4 +62,8 @@ public:
     UINT m_nIsolineCount;
     double m_fpIsolineDelta;
     UINT m_nFieldLineCount;
+    geom::point2d_t DipoleAt(geom::point2d_t p, geom::point2d_t o);
+    CEdit m_dip;
+    afx_msg void OnCbnSelchangeCombo1();
+    CComboBox m_simmode;
 };

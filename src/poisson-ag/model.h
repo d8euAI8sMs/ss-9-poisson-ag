@@ -418,11 +418,13 @@ namespace model
             }
         }
 
-        // explicitly add sphere centers to mesh
+        // explicitly add sphere centers and charges to mesh
         // may be helpful when the interaction energy
         // or something like it should be calculated
         md.mesh->add({ 0, 0 });
         md.mesh->add(p.b);
+        md.mesh->add(pdr);
+        md.mesh->add(pdr2 + p.b);
 
         // add some neighborhood in order to calculate
         // some mean values on it
