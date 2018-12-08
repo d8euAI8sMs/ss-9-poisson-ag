@@ -21,7 +21,7 @@ namespace model
 
         // geometry params
         double r;           /**< sphere radius           */
-        double dr;          /**< charge displacement, [0,1]  */
+        geom::point2d_t dr; /**< charge displacement, [0,1]  */
         geom::point2d_t b;  /**< 2nd sphere displacement */
 
         // other params
@@ -41,7 +41,7 @@ namespace model
             250, 250,
 
             // geometry params
-            50, 0,
+            50, { 0, 0 },
             { 120, 120 },
 
             // other params
@@ -256,22 +256,24 @@ namespace model
         md.mesh->init(super);
 
         double r0, s0;
+        geom::point2d_t pdr = { p.r * p.dr.x, p.r * p.dr.y };
+        double pdrn = math::norm(pdr);
 
-        md.mesh->add({ 0, p.r * p.dr }, material::ext | material::bound | material::charge);
+        md.mesh->add(pdr, material::ext | material::bound | material::charge);
 
         s0 = p.s / 5;
         r0 = s0;
         {
             auto cl = make_circle_shape(s0 / r0);
-            cl = transform_polygon(cl, { 0, p.r * p.dr }, r0);
+            cl = transform_polygon(cl, pdr, r0);
             md.mesh->add(cl.points.begin(), cl.points.end(), material::bound | material::charge_neighbor);
         }
 
         r0 = 2 * s0;
-        while (r0 < min(p.s, p.r - p.r * p.dr))
+        while (r0 < min(p.s, p.r - pdrn))
         {
             auto cl = make_circle_shape(s0 / r0);
-            cl = transform_polygon(cl, { 0, p.r * p.dr }, r0);
+            cl = transform_polygon(cl, pdr, r0);
             md.mesh->add(cl.points.begin(), cl.points.end());
             r0 += s0;
         }
@@ -785,7 +787,7 @@ namespace model
     inline double finel_galerkin::_charge_of(geom::mesh::idx_t i) const
     {
         if (m->flags_at(i) & material::charge_neighbor)
-            return p.q0 / p.eps / math::norm(geom::make_point(0, p.r * p.dr) - m->point_at(i));
+            return p.q0 / p.eps / math::norm(geom::make_point(p.r * p.dr.x, p.r * p.dr.y) - m->point_at(i));
         if (m->flags_at(i) & material::circle_bound)
         {
             auto f1 = x[vars_rev[gd.bc_neighbors.at(i).first]],

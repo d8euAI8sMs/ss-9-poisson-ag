@@ -42,7 +42,7 @@ void CPoissonAGDlg::DoDataExchange(CDataExchange* pDX)
     DDX_Text(pDX, IDC_EDIT1,  data.params->w);
     DDX_Text(pDX, IDC_EDIT5,  data.params->h);
     DDX_Text(pDX, IDC_EDIT2,  data.params->r);
-    DDX_Text(pDX, IDC_EDIT3,  data.params->dr);
+    DDX_Text(pDX, IDC_EDIT3,  data.params->dr.y);
     DDX_Text(pDX, IDC_EDIT4,  data.params->s);
     DDX_Text(pDX, IDC_EDIT9,  data.params->ds);
     DDX_Text(pDX, IDC_EDIT13, data.params->q0);
