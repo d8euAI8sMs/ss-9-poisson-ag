@@ -262,7 +262,7 @@ void CPoissonAGDlg::OnSimulation()
                 double u = udata.d1.x * udata.d2.x + udata.d1.y * udata.d2.y;
                 u += 3 * (udata.d1.x * o.x + udata.d1.y * o.y) * (udata.d2.x * o.x + udata.d2.y * o.y);
                 u /= data.params->b.length() * data.params->b.length() * data.params->b.length();
-                fmt.Format(_T("%.5e"), u);
+                fmt.Format(_T("%.9f"), u);
                 udata.Ud.SetWindowText(fmt);
             }
         }
@@ -281,7 +281,7 @@ void CPoissonAGDlg::OnSimulation()
                 double u = udata.d1.x * udata.d2.x + udata.d1.y * udata.d2.y;
                 u += 3 * (udata.d1.x * o.x + udata.d1.y * o.y) * (udata.d2.x * o.x + udata.d2.y * o.y);
                 u /= data.params->b.length() * data.params->b.length() * data.params->b.length();
-                fmt.Format(_T("%.5e"), u);
+                fmt.Format(_T("%.9f"), u);
                 udata.Ud.SetWindowText(fmt);
             }
         }
@@ -338,16 +338,19 @@ geom::point2d_t CPoissonAGDlg::DipoleAt(geom::point2d_t p0, geom::point2d_t o)
         auto p01 = data.system_data.mesh->point_at(v1);
         auto p02 = data.system_data.mesh->point_at(v2);
 
-        auto p1 = (p01 - o) / math::norm(p01 - o);
-        auto p2 = (p02 - o) / math::norm(p02 - o);
+        auto p1o = p01 - o;
+        auto p2o = p02 - o;
+
+        auto p1 = p1o / math::norm(p1o);
+        auto p2 = p2o / math::norm(p2o);
 
         double dn = p2.y * p1.x - p2.x * p1.y;
 
         geom::point2d_t d = {
-            (p1.length() * p1.length() * data.system_data.data->at(v1) * p2.y -
-            p2.length() * p2.length() * data.system_data.data->at(v2) * p1.y) / dn,
-            -(p1.length() * p1.length() * data.system_data.data->at(v1) * p2.x -
-            p2.length() * p2.length() * data.system_data.data->at(v2) * p1.x) / dn
+            (p1o.length() * p1o.length() * data.system_data.data->at(v1) * p2.y -
+            p2o.length() * p2o.length() * data.system_data.data->at(v2) * p1.y) / dn,
+            -(p1o.length() * p1o.length() * data.system_data.data->at(v1) * p2.x -
+            p2o.length() * p2o.length() * data.system_data.data->at(v2) * p1.x) / dn
         };
 
         if (!isfinite(d.x) || !isfinite(d.y)) continue;
