@@ -26,6 +26,7 @@ public:
 protected:
     HICON m_hIcon;
     model::model_data data;
+    model::parameters params;
 
     // Generated message map functions
     virtual BOOL OnInitDialog();

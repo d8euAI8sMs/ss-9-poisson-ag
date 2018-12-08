@@ -28,6 +28,7 @@ CPoissonAGDlg::CPoissonAGDlg(CWnd* pParent /*=NULL*/)
     , m_nFieldLineCount(100)
 {
     m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+    this->params = *data.params;
 }
 
 void CPoissonAGDlg::DoDataExchange(CDataExchange* pDX)
@@ -39,16 +40,16 @@ void CPoissonAGDlg::DoDataExchange(CDataExchange* pDX)
     DDX_Check(pDX, IDC_CHECK1, m_bDirichletCellsVisible);
     DDX_Check(pDX, IDC_CHECK4, m_bIsolinesVisible);
     DDX_Check(pDX, IDC_CHECK5, m_bFieldLinesVisible);
-    DDX_Text(pDX, IDC_EDIT1,  data.params->w);
-    DDX_Text(pDX, IDC_EDIT5,  data.params->h);
-    DDX_Text(pDX, IDC_EDIT2,  data.params->r);
-    DDX_Text(pDX, IDC_EDIT3,  data.params->dr.y);
-    DDX_Text(pDX, IDC_EDIT4,  data.params->s);
-    DDX_Text(pDX, IDC_EDIT9,  data.params->ds);
-    DDX_Text(pDX, IDC_EDIT13, data.params->q0);
-    DDX_Text(pDX, IDC_EDIT21, data.params->eps);
-    DDX_Text(pDX, IDC_EDIT6, data.params->b.x);
-    DDX_Text(pDX, IDC_EDIT7, data.params->b.y);
+    DDX_Text(pDX, IDC_EDIT1, params.w);
+    DDX_Text(pDX, IDC_EDIT5, params.h);
+    DDX_Text(pDX, IDC_EDIT2, params.r);
+    DDX_Text(pDX, IDC_EDIT3, params.dr.y);
+    DDX_Text(pDX, IDC_EDIT4, params.s);
+    DDX_Text(pDX, IDC_EDIT9, params.ds);
+    DDX_Text(pDX, IDC_EDIT13, params.q0);
+    DDX_Text(pDX, IDC_EDIT21, params.eps);
+    DDX_Text(pDX, IDC_EDIT6, params.b.x);
+    DDX_Text(pDX, IDC_EDIT7, params.b.y);
     DDX_Text(pDX, IDC_EDIT15, m_nIsolineCount);
     DDX_Text(pDX, IDC_EDIT16, m_fpIsolineDelta);
     DDX_Text(pDX, IDC_EDIT17, m_nFieldLineCount);
@@ -140,6 +141,7 @@ HCURSOR CPoissonAGDlg::OnQueryDragIcon()
 
 void CPoissonAGDlg::OnSimulation()
 {
+    *data.params = params;
     model::adjust(*data.params, *data.config.world);
     model::update_system_data(*data.params, data.system_data);
     model::finel_galerkin g(*data.params, *data.system_data.geometry, data.system_data.mesh);
